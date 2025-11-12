@@ -19,14 +19,24 @@ import {
 export default function App() {
   const [tab, setTab] = useState("analytics");
   const [transactions, setTransactions] = useState([]);
+  const [tickers, setTickers] = useState([]);
+
+  const tickerPrices = useMemo(() => {
+    const map = {};
+    tickers.forEach(t => map[t.Tickers] = parseFloat(t['Current Value']) || 0);
+    return map;
+  }, [tickers]);
 
   const analytics = useMemo(() => {
     const totalInvestment = transactions.reduce((s, t) => s + t.qty * t.price, 0);
-    return { totalInvestment, currentValue: totalInvestment, profit: 0 };
-  }, [transactions]);
+    const currentValue = transactions.reduce((s, t) => s + t.qty * (tickerPrices[t.ticker] || t.price), 0);
+    const profit = currentValue - totalInvestment;
+    return { totalInvestment, currentValue, profit };
+  }, [transactions, tickerPrices]);
 
   useEffect(() => {
     fetchTransactions();
+    fetchTickers();
   }, []);
 
   const fetchTransactions = async () => {
@@ -36,6 +46,16 @@ export default function App() {
       setTransactions(data.data || []);
     } catch {
       setTransactions([]);
+    }
+  };
+
+  const fetchTickers = async () => {
+    try {
+      const res = await fetch("https://script.google.com/macros/s/AKfycbxD2Y90raZVlijC5WgdkqE_SK_O7Dcqfl8uP_aieZDFdgkrITv7SFaMZeBCq3W-xSiCHw/exec?action=get_tickers");
+      const data = await res.json();
+      setTickers(data.data || []);
+    } catch {
+      setTickers([]);
     }
   };
 
@@ -57,7 +77,7 @@ export default function App() {
             {tab === "analytics" ? (
               <AnalyticsPanel analytics={analytics} transactions={transactions} />
             ) : (
-              <TransactionsPanel transactions={transactions} setTransactions={setTransactions} />
+              <TransactionsPanel transactions={transactions} setTransactions={setTransactions} tickers={tickers} />
             )}
           </div>
         </div>
@@ -174,7 +194,7 @@ function StatCard({ label, value, positive }) {
   );
 }
 
-function TransactionsPanel({ transactions, setTransactions }) {
+function TransactionsPanel({ transactions, setTransactions, tickers }) {
   const [form, setForm] = useState({ date: "", ticker: "", company: "", qty: "", price: "", broker: "" });
   const [saving, setSaving] = useState(false);
 
@@ -206,8 +226,15 @@ function TransactionsPanel({ transactions, setTransactions }) {
       <form onSubmit={submit} className="md:col-span-1 space-y-3 bg-white border p-4 rounded">
         <h3 className="text-sm font-medium">Add transaction</h3>
         <input value={form.date} onChange={(e)=>setForm({...form,date:e.target.value})} type="date" className="w-full p-2 border rounded" required />
-        <input value={form.ticker} onChange={(e)=>setForm({...form,ticker:e.target.value.toUpperCase()})} placeholder="Ticker e.g. TCS" className="w-full p-2 border rounded" required />
-        <input value={form.company} onChange={(e)=>setForm({...form,company:e.target.value})} placeholder="Company" className="w-full p-2 border rounded" />
+        <select value={form.ticker} onChange={(e)=>{
+          const selectedTicker = e.target.value.toUpperCase();
+          const selected = tickers.find(t => t.Tickers === selectedTicker);
+          setForm({...form, ticker: selectedTicker, company: selected ? selected['Company Name'] : ''});
+        }} className="w-full p-2 border rounded" required>
+          <option value="">Select Ticker</option>
+          {tickers.map(t => <option key={t.Tickers} value={t.Tickers}>{t.Tickers} - {t['Company Name']}</option>)}
+        </select>
+        <input value={form.company} placeholder="Company" className="w-full p-2 border rounded bg-gray-100" readOnly />
         <div className="grid grid-cols-2 gap-2">
           <input value={form.qty} onChange={(e)=>setForm({...form,qty:e.target.value})} type="number" placeholder="Qty" className="p-2 border rounded" required />
           <input value={form.price} onChange={(e)=>setForm({...form,price:e.target.value})} type="number" step="0.01" placeholder="Price" className="p-2 border rounded" required />
