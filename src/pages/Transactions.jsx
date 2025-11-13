@@ -39,7 +39,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
   function handleEdit(t) {
     setEditingId(t.id);
     setIsEditing(true);
-    setForm({ date: t.date.split('T')[0], ticker: t.ticker, company: t.company, assetType: t.assetType || "", qty: t.qty, price: t.price, broker: t.broker });
+    setForm({ date: t.date.split('T')[0], ticker: t.ticker, company: t.company, assetType: t['Asset Type'] || "", qty: t.qty, price: t.price, broker: t.broker });
     setShowModal(true);
   }
 
@@ -82,6 +82,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticker</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Type</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broker</th>
@@ -94,6 +95,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(t.date).toLocaleDateString()}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{t.ticker}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.company}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t['Asset Type']}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.qty}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{t.price}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.broker}</td>

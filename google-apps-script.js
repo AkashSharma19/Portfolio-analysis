@@ -133,7 +133,7 @@ function addTransactionRow(data) {
     const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim().toLowerCase());
     // If sheet is empty, create header row
     if (!headerRow || headerRow.length === 0 || headerRow[0] === '') {
-      sheet.appendRow(['id', 'date', 'ticker', 'company', 'qty', 'price', 'broker', 'assetType']);
+      sheet.appendRow(['id', 'date', 'ticker', 'company', 'qty', 'price', 'broker', 'Asset Type']);
     }
     const row = [
       Date.now(), // id
