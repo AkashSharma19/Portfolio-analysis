@@ -100,8 +100,8 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{t.price}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.broker}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onClick={() => handleEdit(t)} className="text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
-                  <button onClick={() => handleDelete(t.id)} className="text-red-600 hover:text-red-900">Delete</button>
+                  <button onClick={() => handleEdit(t)} className="text-indigo-600 hover:text-indigo-900 mr-4 text-lg" title="Edit">✏️</button>
+                  <button onClick={() => handleDelete(t.id)} className="text-red-600 hover:text-red-900 text-lg" title="Delete">🗑️</button>
                 </td>
               </tr>
             ))}
