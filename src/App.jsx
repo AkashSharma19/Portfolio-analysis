@@ -195,7 +195,7 @@ function StatCard({ label, value, positive }) {
 }
 
 function TransactionsPanel({ transactions, setTransactions, tickers }) {
-  const [form, setForm] = useState({ date: "", ticker: "", company: "", qty: "", price: "", broker: "" });
+  const [form, setForm] = useState({ date: "", ticker: "", company: "", assetType: "", qty: "", price: "", broker: "" });
   const [saving, setSaving] = useState(false);
 
   async function submit(e) {
@@ -229,12 +229,13 @@ function TransactionsPanel({ transactions, setTransactions, tickers }) {
         <select value={form.ticker} onChange={(e)=>{
           const selectedTicker = e.target.value.toUpperCase();
           const selected = tickers.find(t => t.Tickers === selectedTicker);
-          setForm({...form, ticker: selectedTicker, company: selected ? selected['Company Name'] : ''});
+          setForm({...form, ticker: selectedTicker, company: selected ? selected['Company Name'] : '', assetType: selected ? selected['Asset Type'] : ''});
         }} className="w-full p-2 border rounded" required>
           <option value="">Select Ticker</option>
           {tickers.map(t => <option key={t.Tickers} value={t.Tickers}>{t.Tickers} - {t['Company Name']}</option>)}
         </select>
         <input value={form.company} placeholder="Company" className="w-full p-2 border rounded bg-gray-100" readOnly />
+        <input value={form.assetType} placeholder="Asset Type" className="w-full p-2 border rounded bg-gray-100" readOnly />
         <div className="grid grid-cols-2 gap-2">
           <input value={form.qty} onChange={(e)=>setForm({...form,qty:e.target.value})} type="number" placeholder="Qty" className="p-2 border rounded" required />
           <input value={form.price} onChange={(e)=>setForm({...form,price:e.target.value})} type="number" step="0.01" placeholder="Price" className="p-2 border rounded" required />
@@ -247,7 +248,7 @@ function TransactionsPanel({ transactions, setTransactions, tickers }) {
         </select>
         <div className="flex items-center gap-2">
           <button className="px-4 py-2 bg-slate-900 text-white rounded" disabled={saving}>{saving ? 'Saving...' : 'Add'}</button>
-          <button type="button" onClick={()=>{ setForm({ date: "", ticker: "", company: "", qty: "", price: "", broker: "" }); }} className="px-3 py-2 border rounded">Reset</button>
+          <button type="button" onClick={()=>{ setForm({ date: "", ticker: "", company: "", assetType: "", qty: "", price: "", broker: "" }); }} className="px-3 py-2 border rounded">Reset</button>
         </div>
       </form>
 
