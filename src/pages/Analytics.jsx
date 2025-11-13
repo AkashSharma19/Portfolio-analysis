@@ -12,6 +12,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
   LabelList,
 } from 'recharts';
 
@@ -359,7 +360,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
           </ul>
         </div>
 
-        {/* Current Value by Sector (Pie Chart) */}
+        {/* Current Value by Sector (Pie Chart - Converted to Internal Label/Legend Style) */}
         <ChartContainer title="Current Value by Sector" height={350}>
           <PieChart>
             <Pie
@@ -369,12 +370,11 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
               cx="50%"
               cy="50%"
               innerRadius={0}
-              outerRadius={120}
+              outerRadius={120} // Maintains the size
               paddingAngle={2}
-              label={({ sector, percent, ...rest }) => (
-                `${sector} ${(percent * 100).toFixed(0)}%`
-              )}
-              labelLine={{ stroke: '#8884d8' }}
+              // REMOVE external label and labelLine props
+              // label={...}
+              // labelLine={...}
               fill="#8884d8"
             >
               {bySector.map((entry, index) => (
@@ -383,16 +383,32 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
                   fill={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]}
                 />
               ))}
-              {/* Optional: Use LabelList for labels inside or on the margin (if needed)
+
+              {/* ADD LabelList for internal percentage labels (like the example image) */}
               <LabelList
-                dataKey="sector"
-                position="outside"
-                stroke="#64748B"
-                formatter={(sector, entry) => `${sector}`}
+                // Calculate percentage for display inside the slice
+                formatter={(value) => {
+                  // Find the entry to get total value for percentage calculation
+                  const total = bySector.reduce((sum, entry) => sum + entry.currentValue, 0);
+                  const percent = (value / total) * 100;
+                  return `${Math.round(percent)}%`; // Format as integer percentage
+                }}
+                dataKey="currentValue" // We use currentValue to calculate the percentage
+                position="inside"
+                fill="#ffffff" // White text for visibility inside colored slices
+                fontWeight="bold"
+                fontSize={14}
               />
-              */}
             </Pie>
+
+            {/* Add Legend below Tooltip for sector names */}
             <Tooltip formatter={(v) => [formatCurrency(v), 'Current Value']} />
+            <Legend
+                layout="horizontal"
+                verticalAlign="bottom"
+                align="center"
+                wrapperStyle={{ paddingTop: '20px' }} // Spacing for the legend
+            />
           </PieChart>
         </ChartContainer>
 
