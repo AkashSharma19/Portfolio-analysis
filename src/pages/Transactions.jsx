@@ -5,11 +5,12 @@ export default function Transactions({ transactions, setTransactions, tickers })
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [loading, setLoading] = useState(false);
   async function submit(e){
     e.preventDefault();
-    setSaving(true);
+    setLoading(true);
+    setShowModal(false);
     try {
       const data = {
         ...form,
@@ -30,12 +31,12 @@ export default function Transactions({ transactions, setTransactions, tickers })
       const tx = await res.json();
       setTransactions(tx.data || []);
       setForm({date:"",ticker:"",company:"",assetType:"",qty:0,price:0,broker:""});
-      setShowModal(false);
     } catch (err) {
       console.error(err);
       alert("Failed to save");
+      setShowModal(true); // reopen modal on error
     }
-    setSaving(false);
+    setLoading(false);
   }
 
   function handleEdit(t) {
@@ -47,6 +48,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
 
   async function handleDelete(id) {
     if (window.confirm("Are you sure you want to delete this transaction?")) {
+      setLoading(true);
       setDeletingId(id);
       await fetch(`https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=delete&id=${id}`);
       // Refresh transactions
@@ -54,6 +56,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
       const tx = await res.json();
       setTransactions(tx.data || []);
       setDeletingId(null);
+      setLoading(false);
     }
   }
 
@@ -74,6 +77,15 @@ export default function Transactions({ transactions, setTransactions, tickers })
 
   return (
     <div>
+      {loading && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50">
+          <div className="loader">
+            <div className="box1"></div>
+            <div className="box2"></div>
+            <div className="box3"></div>
+          </div>
+        </div>
+      )}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold text-gray-800">Transactions</h2>
         <button onClick={handleAdd} className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium">Add Transaction</button>
@@ -107,7 +119,15 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.broker}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button onClick={() => handleEdit(t)} className="text-indigo-600 hover:text-indigo-900 mr-4 text-lg" title="Edit">✏️</button>
-                  <button onClick={() => handleDelete(t.id)} disabled={deletingId === t.id} className="text-red-600 hover:text-red-900 text-lg disabled:opacity-50" title="Delete">{deletingId === t.id ? '⏳' : '🗑️'}</button>
+                  <button onClick={() => handleDelete(t.id)} disabled={deletingId === t.id} className="text-red-600 hover:text-red-900 text-lg disabled:opacity-50" title="Delete">
+                    {deletingId === t.id ? (
+                      <div className="loader" style={{transform: 'scale(0.3)'}}>
+                        <div className="box1"></div>
+                        <div className="box2"></div>
+                        <div className="box3"></div>
+                      </div>
+                    ) : '🗑️'}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -119,7 +139,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
         <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-medium mb-4">{isEditing ? "Edit Transaction" : "Add Transaction"}</h3>
-            <form onSubmit={submit} className={saving ? "pointer-events-none opacity-50" : ""}>
+            <form onSubmit={submit}>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -168,8 +188,8 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 </div>
               </div>
               <div className="mt-6 flex gap-4">
-                <button disabled={saving} className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium disabled:opacity-50">{saving ? "Saving..." : (isEditing ? "Update" : "Add")}</button>
-                <button type="button" onClick={handleCancel} disabled={saving} className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 font-medium disabled:opacity-50">Cancel</button>
+                <button className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium">{isEditing ? "Update" : "Add"}</button>
+                <button type="button" onClick={handleCancel} className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 font-medium">Cancel</button>
               </div>
             </form>
           </div>
