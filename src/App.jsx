@@ -6,6 +6,7 @@ export default function App() {
   const [tab, setTab] = useState("analytics");
   const [transactions, setTransactions] = useState([]);
   const [tickers, setTickers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const tickerPrices = useMemo(() => {
     const map = {};
@@ -21,8 +22,11 @@ export default function App() {
   }, [transactions, tickerPrices]);
 
   useEffect(() => {
-    fetchTransactions();
-    fetchTickers();
+    const loadData = async () => {
+      await Promise.all([fetchTransactions(), fetchTickers()]);
+      setLoading(false);
+    };
+    loadData();
   }, []);
 
   const fetchTransactions = async () => {
@@ -61,7 +65,7 @@ export default function App() {
 
           <div className="p-6">
             {tab === "analytics" ? (
-              <Analytics analytics={analytics} transactions={transactions} tickerPrices={tickerPrices} />
+              <Analytics analytics={analytics} transactions={transactions} tickerPrices={tickerPrices} loading={loading} />
             ) : (
               <Transactions transactions={transactions} setTransactions={setTransactions} tickers={tickers} />
             )}

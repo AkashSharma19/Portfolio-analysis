@@ -402,9 +402,18 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
 }
 
 
-export default function Analytics({ analytics, transactions, tickerPrices }) {
+export default function Analytics({ analytics, transactions, tickerPrices, loading }) {
   return (
     <div className="font-sans p-4 sm:p-0">
+      {loading && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50">
+          <div className="loader">
+            <div className="box1"></div>
+            <div className="box2"></div>
+            <div className="box3"></div>
+          </div>
+        </div>
+      )}
       <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8">
         Portfolio Analytics
       </h2>
