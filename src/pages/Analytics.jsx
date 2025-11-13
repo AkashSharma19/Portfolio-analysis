@@ -10,12 +10,18 @@ import {
   CartesianGrid,
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658'];
 
 function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
   // prepare data for charts (group by date)
   const byDate = aggregateByDate(transactions);
   const holdings = aggregateHoldings(transactions, tickerPrices);
+  const bySector = aggregateBySector(transactions, tickerPrices);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -56,6 +62,22 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
             </ResponsiveContainer>
           </div>
         </div>
+
+        <div className="bg-white border rounded p-4">
+          <h3 className="text-sm font-medium mb-2">Investment and Profit by Sector</h3>
+          <div style={{ height: 220, minHeight: 220 }} className="w-full">
+            <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+              <BarChart data={bySector}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="sector" />
+                <YAxis />
+                <Tooltip formatter={(v, name) => [formatCurrency(v), name === 'investment' ? 'Investment' : 'Profit']} />
+                <Bar dataKey="investment" fill="#10b981" />
+                <Bar dataKey="profit" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -66,6 +88,31 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
             <li>Total tickers: <strong>{Object.keys(aggregateHoldings(transactions)).length}</strong></li>
             <li>Avg investment / tx: <strong>{formatCurrency(analytics.totalInvestment / Math.max(1, transactions.length))}</strong></li>
           </ul>
+        </div>
+
+        <div className="bg-white border rounded p-4">
+          <h3 className="text-sm font-medium mb-2">Current Value by Sector</h3>
+          <div style={{ height: 300, minHeight: 300 }} className="w-full">
+            <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+              <PieChart>
+                <Pie
+                  data={bySector}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ sector, percent }) => `${sector} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="currentValue"
+                >
+                  {bySector.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => formatCurrency(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         <div className="bg-white border rounded p-4">
@@ -120,6 +167,23 @@ function aggregateHoldings(tx = [], tickerPrices = {}) {
     map[ticker].profit = profit;
   });
   return map;
+}
+
+function aggregateBySector(tx = [], tickerPrices = {}) {
+  const map = {};
+  tx.forEach(t => {
+    const sector = t.sector || 'Unknown';
+    if (!map[sector]) map[sector] = { sector, qty: 0, investment: 0, currentValue: 0 };
+    map[sector].qty += t.qty;
+    map[sector].investment += t.qty * t.price;
+    const currentPrice = tickerPrices[t.ticker] || 0;
+    map[sector].currentValue += t.qty * currentPrice;
+  });
+  // Calculate profit for each sector
+  Object.keys(map).forEach(sector => {
+    map[sector].profit = map[sector].currentValue - map[sector].investment;
+  });
+  return Object.values(map);
 }
 
 function formatCurrency(v = 0) {
