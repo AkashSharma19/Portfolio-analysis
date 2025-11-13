@@ -27,7 +27,7 @@ export default function App() {
 
   const fetchTransactions = async () => {
     try {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=get");
+      const res = await fetch("https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=get");
       const data = await res.json();
       setTransactions(data.data || []);
     } catch {

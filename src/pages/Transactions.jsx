@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 export default function Transactions({ transactions, setTransactions, tickers }){
-  const [form, setForm] = useState({ date: "", ticker: "", company: "", assetType: "", qty: 0, price: 0, broker: "" });
+  const [form, setForm] = useState({ date: "", ticker: "", company: "", assetType: "", sector: "", qty: 0, price: 0, broker: "" });
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -15,16 +15,17 @@ export default function Transactions({ transactions, setTransactions, tickers })
         date: new Date(form.date).toISOString(),
         qty: parseInt(form.qty || 0),
         price: parseFloat(form.price || 0),
+        sector: form.sector,
       };
       if (isEditing) {
-        await fetch(`https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=update&id=${editingId}&data=${encodeURIComponent(JSON.stringify(data))}`);
+        await fetch(`https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=update&id=${editingId}&data=${encodeURIComponent(JSON.stringify(data))}`);
         setIsEditing(false);
         setEditingId(null);
       } else {
-        await fetch(`https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=add&data=${encodeURIComponent(JSON.stringify(data))}`);
+        await fetch(`https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=add&data=${encodeURIComponent(JSON.stringify(data))}`);
       }
       // Refresh transactions
-      const res = await fetch("https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=get");
+      const res = await fetch("https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=get");
       const tx = await res.json();
       setTransactions(tx.data || []);
       setForm({date:"",ticker:"",company:"",assetType:"",qty:0,price:0,broker:""});
@@ -39,15 +40,15 @@ export default function Transactions({ transactions, setTransactions, tickers })
   function handleEdit(t) {
     setEditingId(t.id);
     setIsEditing(true);
-    setForm({ date: t.date.split('T')[0], ticker: t.ticker, company: t.company, assetType: t['Asset Type'] || "", qty: t.qty, price: t.price, broker: t.broker });
+    setForm({ date: t.date.split('T')[0], ticker: t.ticker, company: t.company, assetType: t['Asset Type'] || "", sector: t.sector || "", qty: t.qty, price: t.price, broker: t.broker });
     setShowModal(true);
   }
 
   async function handleDelete(id) {
     if (window.confirm("Are you sure you want to delete this transaction?")) {
-      await fetch(`https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=delete&id=${id}`);
+      await fetch(`https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=delete&id=${id}`);
       // Refresh transactions
-      const res = await fetch("https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=get");
+      const res = await fetch("https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=get");
       const tx = await res.json();
       setTransactions(tx.data || []);
     }
@@ -63,7 +64,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
   function handleAdd() {
     setIsEditing(false);
     setEditingId(null);
-    setForm({date:"",ticker:"",company:"",assetType:"",qty:0,price:0,broker:""});
+    setForm({date:"",ticker:"",company:"",assetType:"",sector:"",qty:0,price:0,broker:""});
     setShowModal(false);
     setShowModal(true);
   }
@@ -83,6 +84,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticker</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Type</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broker</th>
@@ -96,6 +98,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{t.ticker}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.company}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t['Asset Type']}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.sector}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.qty}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{t.price}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.broker}</td>
@@ -125,7 +128,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
                     <select value={form.ticker} onChange={(e)=>{
                       const selectedTicker = e.target.value.toUpperCase();
                       const selected = tickers.find(t => t.Tickers === selectedTicker);
-                      setForm({...form, ticker: selectedTicker, company: selected ? selected['Company Name'] : '', assetType: selected ? selected['Asset Type'] : ''});
+                      setForm({...form, ticker: selectedTicker, company: selected ? selected['Company Name'] : '', assetType: selected ? selected['Asset Type'] : '', sector: selected ? selected['Sector'] : ''});
                     }} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
                       <option value="">Select Ticker</option>
                       {tickers.map(t => <option key={t.Tickers} value={t.Tickers}>{t.Tickers} - {t['Company Name']}</option>)}
@@ -141,6 +144,10 @@ export default function Transactions({ transactions, setTransactions, tickers })
                     <label className="block text-sm font-medium text-gray-700 mb-1">Asset Type</label>
                     <input placeholder="e.g., Equity" value={form.assetType} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readOnly />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Sector</label>
+                  <input placeholder="e.g., Technology" value={form.sector} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readOnly />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

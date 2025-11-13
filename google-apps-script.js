@@ -93,7 +93,8 @@ function updateTransaction(e) {
           Number(data.qty) || dataRange[i][4],
           Number(data.price) || dataRange[i][5],
           data.broker || dataRange[i][6],
-          data.assetType || dataRange[i][7] || ''
+          data.assetType || dataRange[i][7] || '',
+          data.sector || dataRange[i][8] || ''
         ];
         sheet.getRange(i + 1, 1, 1, row.length).setValues([row]);
         return jsonSuccess({ success: true });
@@ -129,11 +130,18 @@ function deleteTransaction(e) {
 function addTransactionRow(data) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    // Ensure sheet has header row. Expected columns: id, date, ticker, company, qty, price, broker
-    const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim().toLowerCase());
+    const headerRange = sheet.getRange(1, 1, 1, sheet.getLastColumn());
+    const actualHeaders = headerRange.getValues()[0].map(h => String(h).trim());
     // If sheet is empty, create header row
-    if (!headerRow || headerRow.length === 0 || headerRow[0] === '') {
-      sheet.appendRow(['id', 'date', 'ticker', 'company', 'qty', 'price', 'broker', 'Asset Type']);
+    if (!actualHeaders || actualHeaders.length === 0 || actualHeaders[0] === '') {
+      sheet.appendRow(['id', 'date', 'ticker', 'company', 'qty', 'price', 'broker', 'Asset Type', 'sector']);
+    } else {
+      // Ensure 'sector' is in headers
+      if (!actualHeaders.includes('sector')) {
+        actualHeaders.push('sector');
+        headerRange.clearContent();
+        sheet.getRange(1, 1, 1, actualHeaders.length).setValues([actualHeaders]);
+      }
     }
     const row = [
       Date.now(), // id
@@ -143,7 +151,8 @@ function addTransactionRow(data) {
       Number(data.qty) || 0,
       Number(data.price) || 0,
       data.broker || '',
-      data.assetType || ''
+      data.assetType || '',
+      data.sector || ''
     ];
     sheet.appendRow(row);
     return jsonSuccess({ success: true });
