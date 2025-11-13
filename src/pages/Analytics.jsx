@@ -41,6 +41,11 @@ const formatCurrency = (value = 0) => {
   return '₹' + v.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 };
 
+const formatPercentage = (value = 0) => {
+  const v = typeof value !== 'number' ? parseFloat(value) || 0 : value;
+  return v.toFixed(2) + '%';
+};
+
 // ... (Keep the aggregation helper functions: aggregateByDate, aggregateHoldings, aggregateByKey, aggregateBySector, aggregateByBroker, aggregateByAssetType unchanged here) ...
 
 /**
@@ -187,6 +192,8 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
   // Use useMemo to avoid recalculating aggregations on every render
   const { totalInvestment, currentValue, profit } = analytics;
 
+  const profitPercentage = totalInvestment > 0 ? (profit / totalInvestment) * 100 : 0;
+
   const byDate = useMemo(
     () => aggregateByDate(transactions),
     [transactions]
@@ -224,7 +231,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
       {/* Left Column (Main Charts) */}
       <div className="md:col-span-2 space-y-6">
         {/* Stat Cards */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <StatCard
             label="Total Investment"
             value={formatCurrency(totalInvestment)}
@@ -237,6 +244,11 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
             label="Profit / Loss"
             value={formatCurrency(profit)}
             // Use the LOSS_COLOR for negative profit
+            positive={profit >= 0}
+          />
+          <StatCard
+            label="Profit / Loss %"
+            value={formatPercentage(profitPercentage)}
             positive={profit >= 0}
           />
         </div>
