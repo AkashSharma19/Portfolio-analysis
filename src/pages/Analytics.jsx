@@ -12,7 +12,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
 } from 'recharts';
 
 // --- Constants & Configuration ---
@@ -27,37 +26,44 @@ const PIE_CHART_COLORS = [
   '#A3E635', // Lime Green
 ];
 
-// Enhanced color palette for charts (using Tailwind shades for better visual appeal)
+// Enhanced color palette for charts
 const LINE_COLOR = '#1D4ED8'; // Tailwind blue-700
 const INVESTMENT_COLOR = '#059669'; // Tailwind emerald-600
 const PROFIT_COLOR = '#3B82F6'; // Tailwind blue-500
 const LOSS_COLOR = '#EF4444'; // Tailwind red-500
 
-// --- Helper Functions (No change in logic, only presentation logic included here) ---
+// --- Helper Functions ---
 
+/**
+ * Formats a number as currency (Indian Rupee, 2 decimal places).
+ * @param {number} value
+ * @returns {string}
+ */
 const formatCurrency = (value = 0) => {
   const v = typeof value !== 'number' ? parseFloat(value) || 0 : value;
   // Use 'en-IN' locale for Indian Rupee presentation (₹)
   return '₹' + v.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 };
 
+/**
+ * Formats a number as a percentage (2 decimal places).
+ * @param {number} value
+ * @returns {string}
+ */
 const formatPercentage = (value = 0) => {
   const v = typeof value !== 'number' ? parseFloat(value) || 0 : value;
+  // Ensure we display two decimal places
   return v.toFixed(2) + '%';
 };
 
-// ... (Keep the aggregation helper functions: aggregateByDate, aggregateHoldings, aggregateByKey, aggregateBySector, aggregateByBroker, aggregateByAssetType unchanged here) ...
-
 /**
  * Aggregates portfolio value over time based on transaction purchase price.
- * NOTE: This is a naive calculation based on cost, not current market value.
  * @param {Array<Object>} transactions
  * @returns {Array<Object>}
  */
 const aggregateByDate = (transactions = []) => {
   if (!transactions || transactions.length === 0) return [];
 
-  // Sort by date to calculate running total
   const sorted = [...transactions].sort(
     (a, b) => new Date(a.date) - new Date(b.date)
   );
@@ -68,7 +74,6 @@ const aggregateByDate = (transactions = []) => {
   sorted.forEach((t) => {
     runningValue += t.qty * t.price;
     const dateKey = new Date(t.date).toLocaleDateString();
-    // Only record the value at the time of the latest transaction on that day
     map[dateKey] = { date: dateKey, value: runningValue };
   });
 
@@ -108,7 +113,6 @@ const aggregateByKey = (transactions = [], tickerPrices = {}, key) => {
   const map = {};
 
   transactions.forEach((t) => {
-    // Handle 'Asset Type' key which has a space
     const groupKeyName = key === 'Asset Type' ? 'Asset Type' : key;
     const groupKey = t[groupKeyName] || 'Unknown';
     if (!map[groupKey])
@@ -139,7 +143,7 @@ const aggregateByAssetType = (tx, prices) => aggregateByKey(tx, prices, 'Asset T
 
 /**
  * Renders a single statistic card.
- * **UI Enhancement:** Added shadow, slightly better border color, and a subtle hover effect.
+ * Enhanced for mobile readability and visual appeal.
  * @param {Object} props
  * @param {string} props.label
  * @param {string} props.value
@@ -151,13 +155,13 @@ function StatCard({ label, value, positive = true }) {
   const valueColor = positive === false ? 'text-rose-600' : 'text-emerald-600';
 
   return (
-    // Updated: added shadow-md, border-slate-200, hover:shadow-lg
-    <div className="p-4 rounded-lg border border-slate-200 bg-white shadow-md transition duration-300 ease-in-out hover:shadow-lg">
-      <div className="text-sm text-slate-500 font-medium">{label}</div>
-      {/* Profit/Loss uses a dynamic color; others use slate-900 */}
+    // Mobile: p-3, Desktop: p-4. Uses transition and shadow for polish.
+    <div className="p-3 sm:p-4 rounded-lg border border-slate-200 bg-white shadow-md transition duration-300 ease-in-out hover:shadow-lg">
+      <div className="text-xs sm:text-sm text-slate-500 font-medium">{label}</div>
+      {/* Font size is slightly larger on desktop for prominence */}
       <div
-        className={`text-xl font-bold mt-1 ${
-          label === 'Profit / Loss' ? valueColor : 'text-slate-900'
+        className={`text-lg sm:text-xl font-bold mt-1 ${
+          label.includes('Profit / Loss') ? valueColor : 'text-slate-900'
         }`}
       >
         {value}
@@ -167,8 +171,7 @@ function StatCard({ label, value, positive = true }) {
 }
 
 /**
- * A wrapper component for all Recharts charts to reduce repetition.
- * **UI Enhancement:** Added `shadow-lg` and rounded corners for a premium feel.
+ * A wrapper component for all Recharts charts to ensure consistent styling.
  * @param {Object} props
  * @param {string} props.title
  * @param {number} [props.height=220]
@@ -176,9 +179,8 @@ function StatCard({ label, value, positive = true }) {
  * @returns {JSX.Element}
  */
 const ChartContainer = ({ title, height = 220, children }) => (
-  // Updated: added shadow-lg, rounded-xl, and slightly larger padding
-  <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-lg">
-    <h3 className="text-lg font-semibold text-slate-700 mb-4">{title}</h3>
+  <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-6 shadow-lg">
+    <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-4">{title}</h3>
     <div style={{ height, minHeight: height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%" minHeight={height}>
         {children}
@@ -187,13 +189,20 @@ const ChartContainer = ({ title, height = 220, children }) => (
   </div>
 );
 
-
+/**
+ * Renders the main analytics dashboard panel.
+ */
 function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
-  // Use useMemo to avoid recalculating aggregations on every render
   const { totalInvestment, currentValue, profit } = analytics;
 
-  const profitPercentage = totalInvestment > 0 ? (profit / totalInvestment) * 100 : 0;
+  // Calculate percentage
+  const profitPercentage = useMemo(() => {
+    // Guard against division by zero
+    if (totalInvestment === 0) return 0;
+    return (profit / totalInvestment) * 100;
+  }, [profit, totalInvestment]);
 
+  // Use useMemo for aggregation performance
   const byDate = useMemo(
     () => aggregateByDate(transactions),
     [transactions]
@@ -227,11 +236,14 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 font-sans">
-      {/* Left Column (Main Charts) */}
-      <div className="md:col-span-2 space-y-6">
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+    // Main layout is fully responsive: single column on mobile, 2/3 + 1/3 split on desktop
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 font-sans">
+      
+      {/* Left Column (Charts - takes up full width on mobile) */}
+      <div className="md:col-span-2 space-y-4 sm:space-y-6">
+        
+        {/* Stat Cards Section - 2 columns on mobile, 4 columns on desktop/tablet */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           <StatCard
             label="Total Investment"
             value={formatCurrency(totalInvestment)}
@@ -243,7 +255,6 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
           <StatCard
             label="Profit / Loss"
             value={formatCurrency(profit)}
-            // Use the LOSS_COLOR for negative profit
             positive={profit >= 0}
           />
           <StatCard
@@ -252,7 +263,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
             positive={profit >= 0}
           />
         </div>
-
+        
         {/* Portfolio Value Over Time (Line Chart) */}
         <ChartContainer title="Portfolio Value Over Time">
           <LineChart data={byDate}>
@@ -264,9 +275,9 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
               type="monotone"
               dataKey="value"
               stroke={LINE_COLOR}
-              strokeWidth={3} // Thicker line
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 4 }} // Highlight active point on hover
+              activeDot={{ r: 4 }}
             />
           </LineChart>
         </ChartContainer>
@@ -279,7 +290,6 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
             <YAxis tickFormatter={(v) => formatCurrency(v, false)} stroke="#64748B" />
             <Tooltip formatter={barTooltipFormatter} />
             <Bar dataKey="investment" fill={INVESTMENT_COLOR} name="Investment" />
-            {/* Conditional color for profit bar based on value (positive/negative) is more complex in recharts but we can use PROFIT_COLOR/LOSS_COLOR based on context here, using PROFIT_COLOR as standard for blue for now */}
             <Bar dataKey="profit" fill={PROFIT_COLOR} name="Profit" />
           </BarChart>
         </ChartContainer>
@@ -321,13 +331,13 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
         </ChartContainer>
       </div>
 
-      {/* Right Column (Quick Stats & Pie Chart) */}
-      <div className="space-y-6">
+      {/* Right Column (Side Panel - stacks below charts on mobile) */}
+      <div className="space-y-4 sm:space-y-6">
+        
         {/* Quick Stats Card */}
-        {/* Updated: Added shadow-lg, rounded-xl */}
-        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-lg">
-          <h3 className="text-lg font-semibold text-slate-700 mb-4">Quick Stats 📊</h3>
-          <ul className="text-base text-slate-700 space-y-2">
+        <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-6 shadow-lg">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-4">Quick Stats 📊</h3>
+          <ul className="text-sm sm:text-base text-slate-700 space-y-2">
             <li>
               Total transactions: <strong>{transactions.length}</strong>
             </li>
@@ -347,16 +357,19 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
         </div>
 
         {/* Current Value by Sector (Pie Chart) */}
-        <ChartContainer title="Current Value by Sector" height={400}>
+        <ChartContainer title="Current Value by Sector" height={300}>
           <PieChart>
             <Pie
               data={bySector}
               dataKey="currentValue"
               nameKey="sector"
               cx="50%"
-              cy="45%"
-              outerRadius={80}
+              cy="50%"
+              outerRadius={100}
               labelLine={false}
+              label={({ sector, percent }) =>
+                `${sector} ${(percent * 100).toFixed(0)}%`
+              }
               paddingAngle={2}
             >
               {bySector.map((entry, index) => (
@@ -367,19 +380,13 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
               ))}
             </Pie>
             <Tooltip formatter={(v) => [formatCurrency(v), 'Current Value']} />
-            <Legend
-              verticalAlign="bottom"
-              height={36}
-              formatter={(value) => <span style={{ color: '#64748B' }}>{value}</span>}
-            />
           </PieChart>
         </ChartContainer>
 
         {/* Next Steps Card */}
-        {/* Updated: Added shadow-lg, rounded-xl */}
-        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-lg">
-          <h3 className="text-lg font-semibold text-slate-700 mb-4">Next Steps 🚀</h3>
-          <ol className="text-base text-slate-700 list-decimal ml-5 space-y-2">
+        <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-6 shadow-lg">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-4">Next Steps 🚀</h3>
+          <ol className="text-sm sm:text-base text-slate-700 list-decimal ml-5 space-y-2">
             <li>Integrate live price API</li>
             <li>CSV import / export</li>
             <li>Add authentication</li>
@@ -390,13 +397,11 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
   );
 }
 
-// --- Main Export ---
 
 export default function Analytics({ analytics, transactions, tickerPrices }) {
-  // Global font setting is often done in the index.css/tailwind.css, but we'll apply it here for component-level scope
   return (
-    <div className="font-sans">
-      <h2 className="text-3xl font-bold text-gray-800 mb-8">
+    <div className="font-sans p-4 sm:p-0">
+      <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8">
         Portfolio Analytics
       </h2>
       <AnalyticsPanel
@@ -407,5 +412,3 @@ export default function Analytics({ analytics, transactions, tickerPrices }) {
     </div>
   );
 }
-
-// ... (Aggregation helpers should be kept outside or in a separate file for production)
