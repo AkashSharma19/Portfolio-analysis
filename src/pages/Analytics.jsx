@@ -12,6 +12,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  LabelList,
 } from 'recharts';
 
 // --- Constants & Configuration ---
@@ -57,11 +58,12 @@ const formatPercentage = (value = 0) => {
 };
 
 /**
- * Aggregates portfolio value over time based on transaction purchase price.
+ * Aggregates portfolio current value over time based on current market prices.
  * @param {Array<Object>} transactions
+ * @param {Object} tickerPrices - Map of ticker to current price
  * @returns {Array<Object>}
  */
-const aggregateByDate = (transactions = []) => {
+const aggregateByDate = (transactions = [], tickerPrices = {}) => {
   if (!transactions || transactions.length === 0) return [];
 
   const sorted = [...transactions].sort(
@@ -72,7 +74,8 @@ const aggregateByDate = (transactions = []) => {
   const map = {};
 
   sorted.forEach((t) => {
-    runningValue += t.qty * t.price;
+    const currentPrice = tickerPrices[t.ticker] || 0;
+    runningValue += t.qty * currentPrice;
     const dateKey = new Date(t.date).toLocaleDateString();
     map[dateKey] = { date: dateKey, value: runningValue };
   });
@@ -204,8 +207,8 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
 
   // Use useMemo for aggregation performance
   const byDate = useMemo(
-    () => aggregateByDate(transactions),
-    [transactions]
+    () => aggregateByDate(transactions, tickerPrices),
+    [transactions, tickerPrices]
   );
   const holdings = useMemo(
     () => aggregateHoldings(transactions, tickerPrices),
@@ -306,11 +309,11 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
           </BarChart>
         </ChartContainer>
 
-        {/* Investment and Current Value by Broker (Bar Chart) */}
-        <ChartContainer title="Investment and Current Value by Broker">
-          <BarChart data={byBroker}>
+        {/* Investment and Current Value by Asset Type (Bar Chart) */}
+        <ChartContainer title="Investment and Current Value by Asset Type">
+          <BarChart data={byAssetType}>
             <CartesianGrid strokeDasharray="5 5" stroke="#e0e0e0" />
-            <XAxis dataKey="broker" stroke="#64748B" />
+            <XAxis dataKey="Asset Type" stroke="#64748B" />
             <YAxis tickFormatter={(v) => formatCurrency(v, false)} stroke="#64748B" />
             <Tooltip formatter={barTooltipFormatter} />
             <Bar dataKey="investment" fill={INVESTMENT_COLOR} name="Investment" />
@@ -318,11 +321,11 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
           </BarChart>
         </ChartContainer>
 
-        {/* Investment and Current Value by Asset Type (Bar Chart) */}
-        <ChartContainer title="Investment and Current Value by Asset Type">
-          <BarChart data={byAssetType}>
+        {/* Investment and Current Value by Broker (Bar Chart) */}
+        <ChartContainer title="Investment and Current Value by Broker">
+          <BarChart data={byBroker}>
             <CartesianGrid strokeDasharray="5 5" stroke="#e0e0e0" />
-            <XAxis dataKey="Asset Type" stroke="#64748B" />
+            <XAxis dataKey="broker" stroke="#64748B" />
             <YAxis tickFormatter={(v) => formatCurrency(v, false)} stroke="#64748B" />
             <Tooltip formatter={barTooltipFormatter} />
             <Bar dataKey="investment" fill={INVESTMENT_COLOR} name="Investment" />
@@ -357,7 +360,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
         </div>
 
         {/* Current Value by Sector (Pie Chart) */}
-        <ChartContainer title="Current Value by Sector" height={300}>
+        <ChartContainer title="Current Value by Sector" height={350}>
           <PieChart>
             <Pie
               data={bySector}
@@ -365,12 +368,14 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
               nameKey="sector"
               cx="50%"
               cy="50%"
-              outerRadius={100}
-              labelLine={false}
-              label={({ sector, percent }) =>
-                `${sector} ${(percent * 100).toFixed(0)}%`
-              }
+              innerRadius={0}
+              outerRadius={120}
               paddingAngle={2}
+              label={({ sector, percent, ...rest }) => (
+                `${sector} ${(percent * 100).toFixed(0)}%`
+              )}
+              labelLine={{ stroke: '#8884d8' }}
+              fill="#8884d8"
             >
               {bySector.map((entry, index) => (
                 <Cell
@@ -378,20 +383,19 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
                   fill={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]}
                 />
               ))}
+              {/* Optional: Use LabelList for labels inside or on the margin (if needed)
+              <LabelList
+                dataKey="sector"
+                position="outside"
+                stroke="#64748B"
+                formatter={(sector, entry) => `${sector}`}
+              />
+              */}
             </Pie>
             <Tooltip formatter={(v) => [formatCurrency(v), 'Current Value']} />
           </PieChart>
         </ChartContainer>
 
-        {/* Next Steps Card */}
-        <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-6 shadow-lg">
-          <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-4">Next Steps 🚀</h3>
-          <ol className="text-sm sm:text-base text-slate-700 list-decimal ml-5 space-y-2">
-            <li>Integrate live price API</li>
-            <li>CSV import / export</li>
-            <li>Add authentication</li>
-          </ol>
-        </div>
       </div>
     </div>
   );
