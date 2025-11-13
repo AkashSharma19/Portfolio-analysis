@@ -22,6 +22,8 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
   const byDate = aggregateByDate(transactions);
   const holdings = aggregateHoldings(transactions, tickerPrices);
   const bySector = aggregateBySector(transactions, tickerPrices);
+  const byBroker = aggregateByBroker(transactions, tickerPrices);
+  const byAssetType = aggregateByAssetType(transactions, tickerPrices);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -74,6 +76,38 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
                 <Tooltip formatter={(v, name) => [formatCurrency(v), name === 'investment' ? 'Investment' : 'Profit']} />
                 <Bar dataKey="investment" fill="#10b981" />
                 <Bar dataKey="profit" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white border rounded p-4">
+          <h3 className="text-sm font-medium mb-2">Investment and Current Value by Broker</h3>
+          <div style={{ height: 220, minHeight: 220 }} className="w-full">
+            <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+              <BarChart data={byBroker}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="broker" />
+                <YAxis />
+                <Tooltip formatter={(v, name) => [formatCurrency(v), name === 'investment' ? 'Investment' : 'Current Value']} />
+                <Bar dataKey="investment" fill="#10b981" />
+                <Bar dataKey="currentValue" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white border rounded p-4">
+          <h3 className="text-sm font-medium mb-2">Investment and Current Value by Asset Type</h3>
+          <div style={{ height: 220, minHeight: 220 }} className="w-full">
+            <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+              <BarChart data={byAssetType}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="assetType" />
+                <YAxis />
+                <Tooltip formatter={(v, name) => [formatCurrency(v), name === 'investment' ? 'Investment' : 'Current Value']} />
+                <Bar dataKey="investment" fill="#10b981" />
+                <Bar dataKey="currentValue" fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -182,6 +216,32 @@ function aggregateBySector(tx = [], tickerPrices = {}) {
   // Calculate profit for each sector
   Object.keys(map).forEach(sector => {
     map[sector].profit = map[sector].currentValue - map[sector].investment;
+  });
+  return Object.values(map);
+}
+
+function aggregateByBroker(tx = [], tickerPrices = {}) {
+  const map = {};
+  tx.forEach(t => {
+    const broker = t.broker || 'Unknown';
+    if (!map[broker]) map[broker] = { broker, qty: 0, investment: 0, currentValue: 0 };
+    map[broker].qty += t.qty;
+    map[broker].investment += t.qty * t.price;
+    const currentPrice = tickerPrices[t.ticker] || 0;
+    map[broker].currentValue += t.qty * currentPrice;
+  });
+  return Object.values(map);
+}
+
+function aggregateByAssetType(tx = [], tickerPrices = {}) {
+  const map = {};
+  tx.forEach(t => {
+    const assetType = t['Asset Type'] || 'Unknown';
+    if (!map[assetType]) map[assetType] = { assetType, qty: 0, investment: 0, currentValue: 0 };
+    map[assetType].qty += t.qty;
+    map[assetType].investment += t.qty * t.price;
+    const currentPrice = tickerPrices[t.ticker] || 0;
+    map[assetType].currentValue += t.qty * currentPrice;
   });
   return Object.values(map);
 }
