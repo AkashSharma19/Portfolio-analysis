@@ -61,7 +61,7 @@ export default function App() {
 
           <div className="p-6">
             {tab === "analytics" ? (
-              <Analytics analytics={analytics} transactions={transactions} />
+              <Analytics analytics={analytics} transactions={transactions} tickerPrices={tickerPrices} />
             ) : (
               <Transactions transactions={transactions} setTransactions={setTransactions} tickers={tickers} />
             )}

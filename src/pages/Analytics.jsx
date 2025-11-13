@@ -12,10 +12,10 @@ import {
   Bar,
 } from "recharts";
 
-function AnalyticsPanel({ analytics, transactions }) {
+function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
   // prepare data for charts (group by date)
   const byDate = aggregateByDate(transactions);
-  const holdings = aggregateHoldings(transactions);
+  const holdings = aggregateHoldings(transactions, tickerPrices);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -42,15 +42,16 @@ function AnalyticsPanel({ analytics, transactions }) {
         </div>
 
         <div className="bg-white border rounded p-4">
-          <h3 className="text-sm font-medium mb-2">Holdings</h3>
+          <h3 className="text-sm font-medium mb-2">Investment and Profit by Company</h3>
           <div style={{ height: 220, minHeight: 220 }} className="w-full">
             <ResponsiveContainer width="100%" height="100%" minHeight={200}>
               <BarChart data={Object.values(holdings)}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="ticker" />
                 <YAxis />
-                <Tooltip formatter={(v) => formatCurrency(v)} />
-                <Bar dataKey="value" fill="#10b981" />
+                <Tooltip formatter={(v, name) => [formatCurrency(v), name === 'investment' ? 'Investment' : 'Profit']} />
+                <Bar dataKey="investment" fill="#10b981" />
+                <Bar dataKey="profit" fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -104,12 +105,19 @@ function aggregateByDate(tx = []) {
   return Object.values(map);
 }
 
-function aggregateHoldings(tx = []) {
+function aggregateHoldings(tx = [], tickerPrices = {}) {
   const map = {};
   tx.forEach(t => {
-    if (!map[t.ticker]) map[t.ticker] = { ticker: t.ticker, qty: 0, value: 0 };
+    if (!map[t.ticker]) map[t.ticker] = { ticker: t.ticker, qty: 0, investment: 0 };
     map[t.ticker].qty += t.qty;
-    map[t.ticker].value += t.qty * t.price;
+    map[t.ticker].investment += t.qty * t.price;
+  });
+  // Calculate current value and profit
+  Object.keys(map).forEach(ticker => {
+    const currentPrice = tickerPrices[ticker] || 0;
+    const currentValue = map[ticker].qty * currentPrice;
+    const profit = currentValue - map[ticker].investment;
+    map[ticker].profit = profit;
   });
   return map;
 }
@@ -119,11 +127,11 @@ function formatCurrency(v = 0) {
   return '₹' + v.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
-export default function Analytics({ analytics, transactions }) {
+export default function Analytics({ analytics, transactions, tickerPrices }) {
   return (
     <div>
       <h2 className="text-2xl font-semibold text-gray-800 mb-6">Portfolio Analytics</h2>
-      <AnalyticsPanel analytics={analytics} transactions={transactions} />
+      <AnalyticsPanel analytics={analytics} transactions={transactions} tickerPrices={tickerPrices} />
     </div>
   );
 }
