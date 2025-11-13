@@ -1,58 +1,79 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 
-export default function Transactions(){
-  const [list, setList] = useState([]);
-  const [form, setForm] = useState({ date: "", ticker: "", company: "", qty: 0, price: 0, broker: "" });
-
-  useEffect(()=>{ fetchList(); }, []);
-  async function fetchList(){
-    try {
-      const res = await axios.get("http://localhost:4000/api/transactions");
-      setList(res.data);
-    } catch { setList([]); }
-  }
+export default function Transactions({ transactions, setTransactions, tickers }){
+  const [form, setForm] = useState({ date: "", ticker: "", company: "", assetType: "", qty: 0, price: 0, broker: "" });
+  const [editingId, setEditingId] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   async function submit(e){
     e.preventDefault();
-    await axios.post("http://localhost:4000/api/transactions", form);
-    setForm({date:"",ticker:"",company:"",qty:0,price:0,broker:""});
-    fetchList();
+    setSaving(true);
+    try {
+      const data = {
+        ...form,
+        date: new Date(form.date).toISOString(),
+        qty: parseInt(form.qty || 0),
+        price: parseFloat(form.price || 0),
+      };
+      if (isEditing) {
+        await fetch(`https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=update&id=${editingId}&data=${encodeURIComponent(JSON.stringify(data))}`);
+        setIsEditing(false);
+        setEditingId(null);
+      } else {
+        await fetch(`https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=add&data=${encodeURIComponent(JSON.stringify(data))}`);
+      }
+      // Refresh transactions
+      const res = await fetch("https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=get");
+      const tx = await res.json();
+      setTransactions(tx.data || []);
+      setForm({date:"",ticker:"",company:"",assetType:"",qty:0,price:0,broker:""});
+      setShowModal(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save");
+    }
+    setSaving(false);
+  }
+
+  function handleEdit(t) {
+    setEditingId(t.id);
+    setIsEditing(true);
+    setForm({ date: t.date.split('T')[0], ticker: t.ticker, company: t.company, assetType: t.assetType || "", qty: t.qty, price: t.price, broker: t.broker });
+    setShowModal(true);
+  }
+
+  async function handleDelete(id) {
+    if (window.confirm("Are you sure you want to delete this transaction?")) {
+      await fetch(`https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=delete&id=${id}`);
+      // Refresh transactions
+      const res = await fetch("https://script.google.com/macros/s/AKfycbzreJw7C_TLlZNMdML0byYq-6eIJ6wHp03wK6DAWRF3Af8geogvAck3QH2CwWzmGJiO/exec?action=get");
+      const tx = await res.json();
+      setTransactions(tx.data || []);
+    }
+  }
+
+  function handleCancel() {
+    setIsEditing(false);
+    setEditingId(null);
+    setForm({date:"",ticker:"",company:"",assetType:"",qty:0,price:0,broker:""});
+    setShowModal(false);
+  }
+
+  function handleAdd() {
+    setIsEditing(false);
+    setEditingId(null);
+    setForm({date:"",ticker:"",company:"",assetType:"",qty:0,price:0,broker:""});
+    setShowModal(false);
+    setShowModal(true);
   }
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-6">Transactions</h2>
-      <form onSubmit={submit} className="bg-gray-50 p-6 rounded-lg mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input required type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ticker</label>
-            <input required placeholder="e.g., AAPL" value={form.ticker} onChange={e=>setForm({...form,ticker:e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-            <input placeholder="e.g., Apple Inc." value={form.company} onChange={e=>setForm({...form,company:e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-            <input required type="number" placeholder="e.g., 100" value={form.qty} onChange={e=>setForm({...form,qty:parseInt(e.target.value||0)})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
-            <input required type="number" step="0.01" placeholder="e.g., 150.50" value={form.price} onChange={e=>setForm({...form,price:parseFloat(e.target.value||0)})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Broker</label>
-            <input placeholder="e.g., Zerodha" value={form.broker} onChange={e=>setForm({...form,broker:e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
-          </div>
-        </div>
-        <div className="mt-6">
-          <button className="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium">Add Transaction</button>
-        </div>
-      </form>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold text-gray-800">Transactions</h2>
+        <button onClick={handleAdd} className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium">Add Transaction</button>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white shadow-md rounded-lg">
@@ -64,10 +85,11 @@ export default function Transactions(){
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broker</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {list.map(t => (
+            {transactions.map(t => (
               <tr key={t.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(t.date).toLocaleDateString()}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{t.ticker}</td>
@@ -75,11 +97,72 @@ export default function Transactions(){
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.qty}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{t.price}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.broker}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button onClick={() => handleEdit(t)} className="text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
+                  <button onClick={() => handleDelete(t.id)} className="text-red-600 hover:text-red-900">Delete</button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-medium mb-4">{isEditing ? "Edit Transaction" : "Add Transaction"}</h3>
+            <form onSubmit={submit} className={saving ? "pointer-events-none opacity-50" : ""}>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input required type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ticker</label>
+                    <select value={form.ticker} onChange={(e)=>{
+                      const selectedTicker = e.target.value.toUpperCase();
+                      const selected = tickers.find(t => t.Tickers === selectedTicker);
+                      setForm({...form, ticker: selectedTicker, company: selected ? selected['Company Name'] : '', assetType: selected ? selected['Asset Type'] : ''});
+                    }} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                      <option value="">Select Ticker</option>
+                      {tickers.map(t => <option key={t.Tickers} value={t.Tickers}>{t.Tickers} - {t['Company Name']}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                    <input placeholder="e.g., Apple Inc." value={form.company} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readOnly />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Asset Type</label>
+                    <input placeholder="e.g., Equity" value={form.assetType} className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readOnly />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                    <input required type="number" placeholder="e.g., 100" value={form.qty} onChange={e=>setForm({...form,qty:parseInt(e.target.value||0)})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                    <input required type="number" step="0.01" placeholder="e.g., 150.50" value={form.price} onChange={e=>setForm({...form,price:parseFloat(e.target.value||0)})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Broker</label>
+                  <input placeholder="e.g., Zerodha" value={form.broker} onChange={e=>setForm({...form,broker:e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                </div>
+              </div>
+              <div className="mt-6 flex gap-4">
+                <button disabled={saving} className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium disabled:opacity-50">{saving ? "Saving..." : (isEditing ? "Update" : "Add")}</button>
+                <button type="button" onClick={handleCancel} disabled={saving} className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 font-medium disabled:opacity-50">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,6 +10,8 @@ function doGet(e) {
     const action = e.parameter.action;
     if (action === 'get') return getTransactions();
     if (action === 'add') return addTransactionFromParam(e);
+    if (action === 'update') return updateTransaction(e);
+    if (action === 'delete') return deleteTransaction(e);
     return jsonError('Invalid action: ' + action);
   } catch (err) {
     Logger.log(err);
@@ -73,6 +75,57 @@ function addTransactionFromBody(payload) {
   return addTransactionRow(payload.data);
 }
 
+function updateTransaction(e) {
+  if (!e.parameter || !e.parameter.id || !e.parameter.data) return jsonError('Missing id or data parameter');
+  try {
+    const id = e.parameter.id;
+    const data = JSON.parse(decodeURIComponent(e.parameter.data));
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const dataRange = sheet.getDataRange().getValues();
+    if (dataRange.length <= 1) return jsonError('No transactions to update');
+    for (let i = 1; i < dataRange.length; i++) {
+      if (String(dataRange[i][0]) === String(id)) {
+        const row = [
+          id,
+          data.date || dataRange[i][1],
+          data.ticker || dataRange[i][2],
+          data.company || dataRange[i][3],
+          Number(data.qty) || dataRange[i][4],
+          Number(data.price) || dataRange[i][5],
+          data.broker || dataRange[i][6],
+          data.assetType || dataRange[i][7] || ''
+        ];
+        sheet.getRange(i + 1, 1, 1, row.length).setValues([row]);
+        return jsonSuccess({ success: true });
+      }
+    }
+    return jsonError('Transaction not found');
+  } catch (err) {
+    Logger.log(err);
+    return jsonError(err.message || 'Failed to update transaction');
+  }
+}
+
+function deleteTransaction(e) {
+  if (!e.parameter || !e.parameter.id) return jsonError('Missing id parameter');
+  try {
+    const id = e.parameter.id;
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const dataRange = sheet.getDataRange().getValues();
+    if (dataRange.length <= 1) return jsonError('No transactions to delete');
+    for (let i = 1; i < dataRange.length; i++) {
+      if (String(dataRange[i][0]) === String(id)) {
+        sheet.deleteRow(i + 1);
+        return jsonSuccess({ success: true });
+      }
+    }
+    return jsonError('Transaction not found');
+  } catch (err) {
+    Logger.log(err);
+    return jsonError(err.message || 'Failed to delete transaction');
+  }
+}
+
 function addTransactionRow(data) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
@@ -80,7 +133,7 @@ function addTransactionRow(data) {
     const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim().toLowerCase());
     // If sheet is empty, create header row
     if (!headerRow || headerRow.length === 0 || headerRow[0] === '') {
-      sheet.appendRow(['id', 'date', 'ticker', 'company', 'qty', 'price', 'broker']);
+      sheet.appendRow(['id', 'date', 'ticker', 'company', 'qty', 'price', 'broker', 'assetType']);
     }
     const row = [
       Date.now(), // id
@@ -89,7 +142,8 @@ function addTransactionRow(data) {
       data.company || '',
       Number(data.qty) || 0,
       Number(data.price) || 0,
-      data.broker || ''
+      data.broker || '',
+      data.assetType || ''
     ];
     sheet.appendRow(row);
     return jsonSuccess({ success: true });
@@ -98,6 +152,7 @@ function addTransactionRow(data) {
     return jsonError(err.message || 'Failed to append row');
   }
 }
+
 
 /* JSON response helpers */
 function jsonSuccess(obj) {
