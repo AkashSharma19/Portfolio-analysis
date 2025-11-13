@@ -6,6 +6,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
   const [isEditing, setIsEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   async function submit(e){
     e.preventDefault();
     setSaving(true);
@@ -46,11 +47,13 @@ export default function Transactions({ transactions, setTransactions, tickers })
 
   async function handleDelete(id) {
     if (window.confirm("Are you sure you want to delete this transaction?")) {
+      setDeletingId(id);
       await fetch(`https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=delete&id=${id}`);
       // Refresh transactions
       const res = await fetch("https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=get");
       const tx = await res.json();
       setTransactions(tx.data || []);
+      setDeletingId(null);
     }
   }
 
@@ -104,7 +107,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.broker}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button onClick={() => handleEdit(t)} className="text-indigo-600 hover:text-indigo-900 mr-4 text-lg" title="Edit">✏️</button>
-                  <button onClick={() => handleDelete(t.id)} className="text-red-600 hover:text-red-900 text-lg" title="Delete">🗑️</button>
+                  <button onClick={() => handleDelete(t.id)} disabled={deletingId === t.id} className="text-red-600 hover:text-red-900 text-lg disabled:opacity-50" title="Delete">{deletingId === t.id ? '⏳' : '🗑️'}</button>
                 </td>
               </tr>
             ))}
