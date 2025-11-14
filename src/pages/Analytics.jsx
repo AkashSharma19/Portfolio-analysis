@@ -196,7 +196,8 @@ const ChartContainer = ({ title, height = 220, children }) => (
 /**
  * Renders the main analytics dashboard panel.
  */
-function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
+function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }) {
+  console.log('AnalyticsPanel portfolioData:', portfolioData);
   const { totalInvestment, currentValue, profit } = analytics;
 
   // Calculate percentage
@@ -208,9 +209,12 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
 
   // Use useMemo for aggregation performance
   const byDate = useMemo(
-    () => aggregateByDate(transactions, tickerPrices),
-    [transactions, tickerPrices]
+    () => portfolioData && portfolioData.length > 0
+      ? portfolioData.map(p => ({ date: p.Date, value: parseFloat(p['Current Value']) || 0 }))
+      : aggregateByDate(transactions, tickerPrices),
+    [transactions, tickerPrices, portfolioData]
   );
+  console.log('byDate:', byDate);
   const holdings = useMemo(
     () => aggregateHoldings(transactions, tickerPrices),
     [transactions, tickerPrices]
@@ -418,7 +422,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices }) {
 }
 
 
-export default function Analytics({ analytics, transactions, tickerPrices, loading }) {
+export default function Analytics({ analytics, transactions, tickerPrices, portfolioData, loading }) {
   return (
     <div className="font-sans p-4 sm:p-0">
       {loading && (

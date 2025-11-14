@@ -6,6 +6,7 @@ export default function App() {
   const [tab, setTab] = useState("analytics");
   const [transactions, setTransactions] = useState([]);
   const [tickers, setTickers] = useState([]);
+  const [portfolioData, setPortfolioData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const tickerPrices = useMemo(() => {
@@ -23,7 +24,7 @@ export default function App() {
 
   useEffect(() => {
     const loadData = async () => {
-      await Promise.all([fetchTransactions(), fetchTickers()]);
+      await Promise.all([fetchTransactions(), fetchTickers(), fetchPortfolio()]);
       setLoading(false);
     };
     loadData();
@@ -31,7 +32,7 @@ export default function App() {
 
   const fetchTransactions = async () => {
     try {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=get");
+      const res = await fetch("https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=get", { cache: 'no-cache' });
       const data = await res.json();
       setTransactions(data.data || []);
     } catch {
@@ -41,11 +42,26 @@ export default function App() {
 
   const fetchTickers = async () => {
     try {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbxD2Y90raZVlijC5WgdkqE_SK_O7Dcqfl8uP_aieZDFdgkrITv7SFaMZeBCq3W-xSiCHw/exec?action=get_tickers");
+      const res = await fetch("https://script.google.com/macros/s/AKfycbxD2Y90raZVlijC5WgdkqE_SK_O7Dcqfl8uP_aieZDFdgkrITv7SFaMZeBCq3W-xSiCHw/exec?action=get_tickers", { cache: 'no-cache' });
       const data = await res.json();
       setTickers(data.data || []);
     } catch {
       setTickers([]);
+    }
+  };
+
+  const fetchPortfolio = async () => {
+    try {
+      console.log('Fetching portfolio...');
+      const res = await fetch("https://script.google.com/macros/s/AKfycbwOeMng4mG4DBztvrhFTm4f9iIVtMlrQHhz1IPFER5PGbx9AJKMZYjcecJ4oI7JqwQh/exec?action=get_portfolio", { cache: 'no-cache' });
+      console.log('Portfolio response status:', res.status);
+      const data = await res.json();
+      console.log('Portfolio data:', data);
+      setPortfolioData(data.data || []);
+      console.log('Set portfolioData to:', data.data || []);
+    } catch (error) {
+      console.log('Portfolio fetch error:', error);
+      setPortfolioData([]);
     }
   };
 
@@ -65,7 +81,7 @@ export default function App() {
 
           <div className="p-6">
             {tab === "analytics" ? (
-              <Analytics analytics={analytics} transactions={transactions} tickerPrices={tickerPrices} loading={loading} />
+              <Analytics analytics={analytics} transactions={transactions} tickerPrices={tickerPrices} portfolioData={portfolioData} loading={loading} />
             ) : (
               <Transactions transactions={transactions} setTransactions={setTransactions} tickers={tickers} />
             )}
