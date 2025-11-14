@@ -118,12 +118,17 @@ const aggregateByDate = (transactions = [], tickerPrices = {}) => {
 const aggregateHoldings = (transactions = [], tickerPrices = {}) => {
   const map = {};
 
-  transactions.forEach(({ ticker, qty, price }) => {
+  transactions.forEach(({ ticker, qty, price, type, sector }) => {
     if (!map[ticker])
-      map[ticker] = { ticker, qty: 0, investment: 0, currentValue: 0 };
-    
-    map[ticker].qty += qty;
-    map[ticker].investment += qty * price;
+      map[ticker] = { ticker, qty: 0, investment: 0, currentValue: 0, sector: sector || 'Unknown' };
+
+    if (type === 'BUY') {
+      map[ticker].qty += qty;
+      map[ticker].investment += qty * price;
+    } else if (type === 'SELL') {
+      map[ticker].qty -= qty;
+      // Investment is sum of buys, so don't subtract for sells
+    }
   });
 
   // Calculate current value and profit
@@ -251,10 +256,23 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
     () => aggregateHoldings(transactions, tickerPrices),
     [transactions, tickerPrices]
   );
-  const bySector = useMemo(
-    () => aggregateBySector(transactions, tickerPrices),
-    [transactions, tickerPrices]
-  );
+  const bySector = useMemo(() => {
+    const sectorMap = {};
+    Object.values(holdings).forEach(holding => {
+      if (holding.qty <= 0) return; // Skip if no remaining shares
+      const sector = holding.sector || 'Unknown';
+      if (!sectorMap[sector]) {
+        sectorMap[sector] = { sector, qty: 0, investment: 0, currentValue: 0 };
+      }
+      sectorMap[sector].qty += holding.qty;
+      sectorMap[sector].investment += holding.investment;
+      sectorMap[sector].currentValue += holding.currentValue;
+    });
+    Object.values(sectorMap).forEach(item => {
+      item.profit = item.currentValue - item.investment;
+    });
+    return Object.values(sectorMap);
+  }, [holdings]);
   const byBroker = useMemo(
     () => aggregateByBroker(transactions, tickerPrices),
     [transactions, tickerPrices]
