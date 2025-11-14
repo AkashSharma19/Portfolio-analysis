@@ -172,6 +172,109 @@ const aggregateBySector = (tx, prices) => aggregateByKey(tx, prices, 'sector');
 const aggregateByBroker = (tx, prices) => aggregateByKey(tx, prices, 'broker');
 const aggregateByAssetType = (tx, prices) => aggregateByKey(tx, prices, 'Asset Type');
 
+/**
+ * Calculates detailed investment and profit metrics per company using FIFO matching.
+ * @param {Array<Object>} transactions
+ * @param {Object} tickerPrices - Map of ticker to current price
+ * @returns {Array<Object>} - Array of company metrics
+ */
+const calculateCompanyMetrics = (transactions = [], tickerPrices = {}) => {
+  const companyMap = {};
+
+  // Group transactions by ticker
+  transactions.forEach(tx => {
+    const qty = parseFloat(tx.qty) || 0;
+    const price = parseFloat(tx.price) || 0;
+    if (!companyMap[tx.ticker]) {
+      companyMap[tx.ticker] = {
+        ticker: tx.ticker,
+        buys: [],
+        sells: [],
+        overallInvestment: 0,
+        realizedProfit: 0,
+        unrealizedProfit: 0,
+        currentInvestment: 0,
+        currentProfit: 0,
+        remainingQty: 0,
+        remainingLots: []
+      };
+    }
+    if (tx.type === 'BUY') {
+      companyMap[tx.ticker].buys.push({ qty, price, date: tx.date });
+      companyMap[tx.ticker].overallInvestment += qty * price;
+    } else if (tx.type === 'SELL') {
+      companyMap[tx.ticker].sells.push({ qty, price, date: tx.date });
+    }
+  });
+
+  // Process each company
+  Object.values(companyMap).forEach(company => {
+    const { buys, sells, ticker } = company;
+    const currentPrice = tickerPrices[ticker] || 0;
+
+    // Sort buys and sells by date
+    buys.sort((a, b) => new Date(a.date) - new Date(b.date));
+    sells.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // FIFO matching for sells
+    const buyQueue = [...buys]; // Copy buys for processing
+    let realizedProfit = 0;
+    let remainingLots = [];
+
+    sells.forEach(sell => {
+      let sellQty = sell.qty;
+      while (sellQty > 0 && buyQueue.length > 0) {
+        const buy = buyQueue[0];
+        const matchQty = Math.min(sellQty, buy.qty);
+        const profit = (sell.price - buy.price) * matchQty;
+        realizedProfit += profit;
+        buy.qty -= matchQty;
+        sellQty -= matchQty;
+        if (buy.qty === 0) {
+          buyQueue.shift();
+        }
+      }
+    });
+
+    // Remaining lots after sells
+    remainingLots = buyQueue.filter(b => b.qty > 0);
+
+    // Calculate remaining qty and current investment
+    let remainingQty = 0;
+    let currentInvestment = 0;
+    let totalCostRemaining = 0;
+    remainingLots.forEach(lot => {
+      remainingQty += lot.qty;
+      currentInvestment += lot.qty * lot.price;
+      totalCostRemaining += lot.qty * lot.price;
+    });
+
+    // Unrealized profit
+    let unrealizedProfit = 0;
+    remainingLots.forEach(lot => {
+      unrealizedProfit += (currentPrice - lot.price) * lot.qty;
+    });
+
+    // Current profit (unrealized for remaining shares)
+    let currentProfit = 0;
+    if (remainingQty > 0) {
+      const avgCost = totalCostRemaining / remainingQty;
+      currentProfit = (currentPrice - avgCost) * remainingQty;
+    }
+
+    // Update company data
+    company.realizedProfit = realizedProfit;
+    company.unrealizedProfit = unrealizedProfit;
+    company.overallTotalProfit = realizedProfit + unrealizedProfit;
+    company.currentInvestment = currentInvestment;
+    company.currentProfit = currentProfit;
+    company.remainingQty = remainingQty;
+    company.remainingLots = remainingLots;
+  });
+
+  return Object.values(companyMap);
+};
+
 
 // --- Components ---
 
@@ -236,6 +339,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
   const { totalInvestment, currentInvestment, currentValue, realizedProfit, unrealizedProfit, totalProfit, profitPercentage } = analytics;
 
   const [timeRange, setTimeRange] = useState('all');
+  const [companyFilter, setCompanyFilter] = useState('Overall');
 
   // Use useMemo for aggregation performance
   const byDate = useMemo(
@@ -281,6 +385,23 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
     () => aggregateByAssetType(transactions, tickerPrices),
     [transactions, tickerPrices]
   );
+  const companyData = useMemo(
+    () => calculateCompanyMetrics(transactions, tickerPrices),
+    [transactions, tickerPrices]
+  );
+  const filteredCompanyData = useMemo(() => {
+    let data = [...companyData];
+    if (companyFilter === 'Current Investment') {
+      data = data.filter(c => c.currentInvestment > 0);
+    }
+    // Sort by investment descending
+    data.sort((a, b) => {
+      const aInv = companyFilter === 'Overall' ? a.overallInvestment : a.currentInvestment;
+      const bInv = companyFilter === 'Overall' ? b.overallInvestment : b.currentInvestment;
+      return bInv - aInv;
+    });
+    return data;
+  }, [companyData, companyFilter]);
   const profitOverTime = useMemo(() => {
     if (!portfolioData || portfolioData.length === 0 || !transactions || transactions.length === 0) return [];
 
@@ -432,23 +553,61 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           ]}
         />
 
+        {/* Company Filter Selector */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <button
+            onClick={() => setCompanyFilter('Overall')}
+            className={`px-3 py-1 rounded text-sm ${companyFilter === 'Overall' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Overall
+          </button>
+          <button
+            onClick={() => setCompanyFilter('Current Investment')}
+            className={`px-3 py-1 rounded text-sm ${companyFilter === 'Current Investment' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Current Investment
+          </button>
+        </div>
+
         {/* Investment and Profit by Company (Bar Chart) */}
         <ChartContainer
-          title="Investment and Profit by Company"
+          title={`Investment and Profit by Company (${companyFilter})`}
           type="bar"
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
-            xaxis: { categories: Object.values(holdings).map(h => h.ticker) },
+            xaxis: { categories: filteredCompanyData.map(c => c.ticker) },
             yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
-            tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
-            colors: [INVESTMENT_COLOR, PROFIT_COLOR],
+            tooltip: {
+              custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                const company = filteredCompanyData[dataPointIndex];
+                const investment = companyFilter === 'Overall' ? company.overallInvestment : company.currentInvestment;
+                const profit = companyFilter === 'Overall' ? company.overallTotalProfit : company.currentProfit;
+                const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
+                return `
+                  <div class="p-2 bg-white border border-gray-300 rounded shadow">
+                    <div class="font-bold">${company.ticker}</div>
+                    <div>Investment: ${formatCurrency(investment)}</div>
+                    <div>Profit/Loss: ${formatCurrency(profit)}</div>
+                    <div>Profit %: ${profitPct}%</div>
+                    <div>Remaining Shares: ${company.remainingQty.toFixed(2)}</div>
+                  </div>
+                `;
+              }
+            },
+            colors: [INVESTMENT_COLOR, ...filteredCompanyData.map(c => (companyFilter === 'Overall' ? c.overallTotalProfit : c.currentProfit) >= 0 ? PROFIT_COLOR : LOSS_COLOR)],
             plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
             dataLabels: { enabled: false },
             grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
           }}
           series={[
-            { name: 'Investment', data: Object.values(holdings).map(h => h.investment) },
-            { name: 'Profit', data: Object.values(holdings).map(h => h.profit) }
+            {
+              name: 'Investment',
+              data: filteredCompanyData.map(c => companyFilter === 'Overall' ? c.overallInvestment : c.currentInvestment)
+            },
+            {
+              name: 'Profit/Loss',
+              data: filteredCompanyData.map(c => companyFilter === 'Overall' ? c.overallTotalProfit : c.currentProfit)
+            }
           ]}
         />
 
