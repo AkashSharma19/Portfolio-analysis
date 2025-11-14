@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 export default function Transactions({ transactions, setTransactions, tickers }){
-  const [form, setForm] = useState({ date: "", ticker: "", company: "", assetType: "", sector: "", qty: 0, price: 0, broker: "" });
+  const [form, setForm] = useState({ date: "", ticker: "", company: "", assetType: "", sector: "", qty: 0, price: 0, broker: "", type: "" });
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -19,16 +19,32 @@ export default function Transactions({ transactions, setTransactions, tickers })
         price: parseFloat(form.price || 0),
         sector: form.sector,
       };
+      console.log('Sending data:', data);
       if (isEditing) {
-        await fetch(`https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=update&id=${editingId}&data=${encodeURIComponent(JSON.stringify(data))}`);
+        const updateRes = await fetch(`https://script.google.com/macros/s/AKfycbx2RvfJT7AcUMLDXRMJNqf8HavKhoA6k5FdGNieehzAiKXkYhpCiERni9JvYNFm7kEE/exec?action=update&id=${editingId}&data=${encodeURIComponent(JSON.stringify(data))}`);
+        const updateResult = await updateRes.json();
+        if (!updateResult.ok) {
+          console.error('Update failed:', updateResult.error);
+          alert('Update failed: ' + updateResult.error);
+          setShowModal(true);
+          return;
+        }
         setIsEditing(false);
         setEditingId(null);
       } else {
-        await fetch(`https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=add&data=${encodeURIComponent(JSON.stringify(data))}`);
+        const addRes = await fetch(`https://script.google.com/macros/s/AKfycbx2RvfJT7AcUMLDXRMJNqf8HavKhoA6k5FdGNieehzAiKXkYhpCiERni9JvYNFm7kEE/exec?action=add&data=${encodeURIComponent(JSON.stringify(data))}`);
+        const addResult = await addRes.json();
+        if (!addResult.ok) {
+          console.error('Add failed:', addResult.error);
+          alert('Add failed: ' + addResult.error);
+          setShowModal(true);
+          return;
+        }
       }
       // Refresh transactions
-      const res = await fetch("https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=get");
+      const res = await fetch("https://script.google.com/macros/s/AKfycbx2RvfJT7AcUMLDXRMJNqf8HavKhoA6k5FdGNieehzAiKXkYhpCiERni9JvYNFm7kEE/exec?action=get");
       const tx = await res.json();
+      console.log('Received transactions:', tx.data);
       setTransactions(tx.data || []);
       setForm({date:"",ticker:"",company:"",assetType:"",qty:0,price:0,broker:""});
     } catch (err) {
@@ -40,9 +56,10 @@ export default function Transactions({ transactions, setTransactions, tickers })
   }
 
   function handleEdit(t) {
+    console.log('Editing transaction:', t);
     setEditingId(t.id);
     setIsEditing(true);
-    setForm({ date: t.date.split('T')[0], ticker: t.ticker, company: t.company, assetType: t['Asset Type'] || "", sector: t.sector || "", qty: t.qty, price: t.price, broker: t.broker });
+    setForm({ date: t.date.split('T')[0], ticker: t.ticker, company: t.company, assetType: t['Asset Type'] || "", sector: t.sector || "", qty: t.qty, price: t.price, broker: t.broker, type: t['type'] || "" });
     setShowModal(true);
   }
 
@@ -50,9 +67,9 @@ export default function Transactions({ transactions, setTransactions, tickers })
     if (window.confirm("Are you sure you want to delete this transaction?")) {
       setLoading(true);
       setDeletingId(id);
-      await fetch(`https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=delete&id=${id}`);
+      await fetch(`https://script.google.com/macros/s/AKfycbx2RvfJT7AcUMLDXRMJNqf8HavKhoA6k5FdGNieehzAiKXkYhpCiERni9JvYNFm7kEE/exec?action=delete&id=${id}`);
       // Refresh transactions
-      const res = await fetch("https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=get");
+      const res = await fetch("https://script.google.com/macros/s/AKfycbx2RvfJT7AcUMLDXRMJNqf8HavKhoA6k5FdGNieehzAiKXkYhpCiERni9JvYNFm7kEE/exec?action=get");
       const tx = await res.json();
       setTransactions(tx.data || []);
       setDeletingId(null);
@@ -63,14 +80,14 @@ export default function Transactions({ transactions, setTransactions, tickers })
   function handleCancel() {
     setIsEditing(false);
     setEditingId(null);
-    setForm({date:"",ticker:"",company:"",assetType:"",qty:0,price:0,broker:""});
+    setForm({date:"",ticker:"",company:"",assetType:"",sector:"",qty:0,price:0,broker:"",type:""});
     setShowModal(false);
   }
 
   function handleAdd() {
     setIsEditing(false);
     setEditingId(null);
-    setForm({date:"",ticker:"",company:"",assetType:"",sector:"",qty:0,price:0,broker:""});
+    setForm({date:"",ticker:"",company:"",assetType:"",sector:"",qty:0,price:0,broker:"",type:""});
     setShowModal(false);
     setShowModal(true);
   }
@@ -103,6 +120,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broker</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -117,6 +135,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.qty}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{t.price}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.broker}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t['type']}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button onClick={() => handleEdit(t)} className="text-indigo-600 hover:text-indigo-900 mr-4 text-lg" title="Edit">✏️</button>
                   <button onClick={() => handleDelete(t.id)} disabled={deletingId === t.id} className="text-red-600 hover:text-red-900 text-lg disabled:opacity-50" title="Delete">
@@ -185,6 +204,14 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Broker</label>
                   <input placeholder="e.g., Zerodha" value={form.broker} onChange={e=>setForm({...form,broker:e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                    <option value="">Select Type</option>
+                    <option value="BUY">BUY</option>
+                    <option value="SELL">SELL</option>
+                  </select>
                 </div>
               </div>
               <div className="mt-6 flex gap-4">
