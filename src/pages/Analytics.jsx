@@ -39,8 +39,8 @@ const formatCurrency = (value = 0) => {
  */
 const formatPercentage = (value = 0) => {
   const v = typeof value !== 'number' ? parseFloat(value) || 0 : value;
-  // Ensure we display two decimal places
-  return v.toFixed(2) + '%';
+  // Display as whole number percentage
+  return v.toFixed(0) + '%';
 };
 
 /**
