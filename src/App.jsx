@@ -16,10 +16,80 @@ export default function App() {
   }, [tickers]);
 
   const analytics = useMemo(() => {
-    const totalInvestment = transactions.reduce((s, t) => s + t.qty * t.price, 0);
+    // Total Investment: sum of (qty * price) for BUY transactions only
+    const totalInvestment = transactions
+      .filter(t => t.type === 'BUY')
+      .reduce((s, t) => s + t.qty * t.price, 0);
+
+    // FIFO processing for realized profit and current investment
+    const fifoResult = (() => {
+      // Sort transactions by date
+      const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      // Map of ticker to array of buy lots: [{qty, price}]
+      const buyLots = {};
+      let realizedProfit = 0;
+
+      sortedTransactions.forEach(t => {
+        if (!buyLots[t.ticker]) buyLots[t.ticker] = [];
+
+        if (t.type === 'BUY') {
+          // Add buy lot
+          buyLots[t.ticker].push({ qty: t.qty, price: t.price });
+        } else if (t.type === 'SELL') {
+          // Process sell using FIFO
+          let remainingSellQty = t.qty; // positive for sell
+          const lots = buyLots[t.ticker] || [];
+          let sellPrice = t.price;
+          while (remainingSellQty > 0 && lots.length > 0) {
+            const lot = lots[0];
+            const matchedQty = Math.min(lot.qty, remainingSellQty);
+            // Realized profit: (sell_price - buy_price) * matched_qty
+            realizedProfit += (sellPrice - lot.price) * matchedQty;
+            remainingSellQty -= matchedQty;
+            lot.qty -= matchedQty;
+            if (lot.qty === 0) lots.shift();
+          }
+          // If remainingSellQty > 0, short position, ignore excess
+        }
+      });
+
+      // Current Investment: sum remaining lots qty * price
+      let currentInvestment = 0;
+      Object.values(buyLots).forEach(lots => {
+        lots.forEach(lot => {
+          currentInvestment += lot.qty * lot.price;
+        });
+      });
+
+      return { currentInvestment, realizedProfit, buyLots };
+    })();
+
+    const { currentInvestment, realizedProfit, buyLots } = fifoResult;
+
+    // Unrealized Profit: for remaining lots, (current_price - buy_price) * qty
+    let unrealizedProfit = 0;
+    Object.entries(buyLots).forEach(([ticker, lots]) => {
+      const currentPrice = tickerPrices[ticker] || 0;
+      lots.forEach(lot => {
+        unrealizedProfit += (currentPrice - lot.price) * lot.qty;
+      });
+    });
+
+    const totalProfit = realizedProfit + unrealizedProfit;
+    const profitPercentage = totalInvestment === 0 ? 0 : (totalProfit / totalInvestment) * 100;
+
     const currentValue = transactions.reduce((s, t) => s + t.qty * (tickerPrices[t.ticker] || t.price), 0);
-    const profit = currentValue - totalInvestment;
-    return { totalInvestment, currentValue, profit };
+
+    return {
+      totalInvestment,
+      currentInvestment,
+      currentValue,
+      realizedProfit,
+      unrealizedProfit,
+      totalProfit,
+      profitPercentage
+    };
   }, [transactions, tickerPrices]);
 
   useEffect(() => {

@@ -228,14 +228,7 @@ const ChartContainer = ({ title, height = 220, options, series, type }) => (
  * Renders the main analytics dashboard panel.
  */
 function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, profitData }) {
-  const { totalInvestment, currentValue, profit } = analytics;
-
-  // Calculate percentage
-  const profitPercentage = useMemo(() => {
-    // Guard against division by zero
-    if (totalInvestment === 0) return 0;
-    return (profit / totalInvestment) * 100;
-  }, [profit, totalInvestment]);
+  const { totalInvestment, currentInvestment, currentValue, realizedProfit, unrealizedProfit, totalProfit, profitPercentage } = analytics;
 
   // Use useMemo for aggregation performance
   const byDate = useMemo(
@@ -277,25 +270,39 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
       {/* Left Column (Charts - takes up full width on mobile) */}
       <div className="md:col-span-2 space-y-4 sm:space-y-6">
         
-        {/* Stat Cards Section - 2 columns on mobile, 4 columns on desktop/tablet */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        {/* Stat Cards Section - 2 columns on mobile, 7 columns on desktop/tablet */}
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4 sm:gap-6">
           <StatCard
             label="Total Investment"
             value={formatCurrency(totalInvestment)}
+          />
+          <StatCard
+            label="Current Investment"
+            value={formatCurrency(currentInvestment)}
           />
           <StatCard
             label="Current Value"
             value={formatCurrency(currentValue)}
           />
           <StatCard
-            label="Profit / Loss"
-            value={formatCurrency(profit)}
-            positive={profit >= 0}
+            label="Realized P/L"
+            value={formatCurrency(realizedProfit)}
+            positive={realizedProfit >= 0}
           />
           <StatCard
-            label="Profit / Loss %"
+            label="Unrealized P/L"
+            value={formatCurrency(unrealizedProfit)}
+            positive={unrealizedProfit >= 0}
+          />
+          <StatCard
+            label="Total P/L"
+            value={formatCurrency(totalProfit)}
+            positive={totalProfit >= 0}
+          />
+          <StatCard
+            label="P/L %"
             value={formatPercentage(profitPercentage)}
-            positive={profit >= 0}
+            positive={totalProfit >= 0}
           />
         </div>
 
