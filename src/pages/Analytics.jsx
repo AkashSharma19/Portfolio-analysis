@@ -44,6 +44,27 @@ const formatPercentage = (value = 0) => {
 };
 
 /**
+ * Formats a number with abbreviated notation (K for thousand, etc.).
+ * @param {number} value
+ * @returns {string}
+ */
+const formatAbbreviated = (value = 0) => {
+  const v = typeof value !== 'number' ? parseFloat(value) || 0 : value;
+  const abs = Math.abs(v);
+  let num = abs;
+  let suffix = '';
+  if (abs >= 1000000) {
+    num = abs / 1000000;
+    suffix = 'M';
+  } else if (abs >= 1000) {
+    num = abs / 1000;
+    suffix = 'K';
+  }
+  const formatted = num % 1 === 0 ? num.toString() : num.toFixed(1);
+  return (v < 0 ? '-' : '') + formatted + suffix;
+};
+
+/**
  * Formats a date as "DD MMM" if current year, "DD MMM YYYY" if previous year.
  * @param {string|Date} date
  * @returns {string}
@@ -289,7 +310,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
             tooltip: { y: { formatter: (v) => formatPercentage(v) } },
             colors: [PROFIT_COLOR],
             stroke: { curve: 'smooth', width: 3 },
-            markers: { size: 4, colors: [PROFIT_COLOR] },
+            markers: { size: 0 },
             grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
           }}
           series={[
@@ -304,8 +325,8 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
             xaxis: { categories: Object.values(holdings).map(h => h.ticker) },
-            yaxis: { labels: { formatter: (v) => formatCurrency(v) } },
-            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
+            tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
             colors: [INVESTMENT_COLOR, PROFIT_COLOR],
             plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
             dataLabels: { enabled: false },
@@ -324,8 +345,8 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
             xaxis: { categories: bySector.map(s => s.sector) },
-            yaxis: { labels: { formatter: (v) => formatCurrency(v) } },
-            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
+            tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
             colors: [INVESTMENT_COLOR, PROFIT_COLOR],
             plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
             dataLabels: { enabled: false },
@@ -344,8 +365,8 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
             xaxis: { categories: byAssetType.map(a => a['Asset Type']) },
-            yaxis: { labels: { formatter: (v) => formatCurrency(v) } },
-            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
+            tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
             colors: [INVESTMENT_COLOR, PROFIT_COLOR],
             plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
             dataLabels: { enabled: false },
@@ -364,8 +385,8 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
             xaxis: { categories: byBroker.map(b => b.broker) },
-            yaxis: { labels: { formatter: (v) => formatCurrency(v) } },
-            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
+            tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
             colors: [INVESTMENT_COLOR, PROFIT_COLOR],
             plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
             dataLabels: { enabled: false },
@@ -389,12 +410,10 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
               Total transactions: <strong>{transactions.length}</strong>
             </li>
             <li>
-              Total tickers:
-              <strong>{Object.keys(holdings).length}</strong>
+              Total tickers: <strong>{Object.keys(holdings).length}</strong>
             </li>
             <li>
-              Avg investment / tx:
-              <strong>
+              Avg investment / tx: <strong>
                 {formatCurrency(
                   totalInvestment / Math.max(1, transactions.length)
                 )}
@@ -411,7 +430,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           options={{
             labels: bySector.map(s => s.sector),
             colors: PIE_CHART_COLORS,
-            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
             legend: { position: 'bottom' },
             dataLabels: {
               enabled: true,
