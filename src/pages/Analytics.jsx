@@ -15,8 +15,8 @@ const PIE_CHART_COLORS = [
 
 // Enhanced color palette for charts
 const LINE_COLOR = '#1D4ED8'; // Tailwind blue-700
-const INVESTMENT_COLOR = '#059669'; // Tailwind emerald-600
-const PROFIT_COLOR = '#3B82F6'; // Tailwind blue-500
+const INVESTMENT_COLOR = '#6B7280'; // Neutral grey
+const PROFIT_COLOR = '#10B981'; // Green for profit
 const LOSS_COLOR = '#EF4444'; // Tailwind red-500
 
 // --- Helper Functions ---
@@ -188,6 +188,7 @@ const calculateCompanyMetrics = (transactions = [], tickerPrices = {}) => {
     if (!companyMap[tx.ticker]) {
       companyMap[tx.ticker] = {
         ticker: tx.ticker,
+        sector: tx.sector || 'Unknown Sector',
         buys: [],
         sells: [],
         overallInvestment: 0,
@@ -195,6 +196,7 @@ const calculateCompanyMetrics = (transactions = [], tickerPrices = {}) => {
         unrealizedProfit: 0,
         currentInvestment: 0,
         currentProfit: 0,
+        currentValue: 0,
         remainingQty: 0,
         remainingLots: []
       };
@@ -268,11 +270,48 @@ const calculateCompanyMetrics = (transactions = [], tickerPrices = {}) => {
     company.overallTotalProfit = realizedProfit + unrealizedProfit;
     company.currentInvestment = currentInvestment;
     company.currentProfit = currentProfit;
+    company.currentValue = remainingQty * currentPrice;
     company.remainingQty = remainingQty;
     company.remainingLots = remainingLots;
   });
 
   return Object.values(companyMap);
+};
+
+/**
+ * Aggregates company metrics by sector.
+ * @param {Array<Object>} companyData - Array of company metrics from calculateCompanyMetrics
+ * @returns {Array<Object>} - Array of sector metrics
+ */
+const calculateSectorMetrics = (companyData = []) => {
+  const sectorMap = {};
+
+  companyData.forEach(company => {
+    const sector = company.sector || 'Unknown Sector';
+    if (!sectorMap[sector]) {
+      sectorMap[sector] = {
+        sector,
+        overallInvestment: 0,
+        realizedProfit: 0,
+        unrealizedProfit: 0,
+        overallTotalProfit: 0,
+        currentInvestment: 0,
+        currentProfit: 0,
+        currentValue: 0,
+        tickerCount: 0
+      };
+    }
+    sectorMap[sector].overallInvestment += company.overallInvestment;
+    sectorMap[sector].realizedProfit += company.realizedProfit;
+    sectorMap[sector].unrealizedProfit += company.unrealizedProfit;
+    sectorMap[sector].overallTotalProfit += company.overallTotalProfit;
+    sectorMap[sector].currentInvestment += company.currentInvestment;
+    sectorMap[sector].currentProfit += company.currentProfit;
+    sectorMap[sector].currentValue += company.currentValue;
+    sectorMap[sector].tickerCount += 1;
+  });
+
+  return Object.values(sectorMap);
 };
 
 
@@ -340,6 +379,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
 
   const [timeRange, setTimeRange] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('Overall');
+  const [sectorFilter, setSectorFilter] = useState('Overall');
 
   // Use useMemo for aggregation performance
   const byDate = useMemo(
@@ -389,6 +429,22 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
     () => calculateCompanyMetrics(transactions, tickerPrices),
     [transactions, tickerPrices]
   );
+  const sectorData = useMemo(
+    () => calculateSectorMetrics(companyData),
+    [companyData]
+  );
+  const filteredSectorData = useMemo(() => {
+    let data = [...sectorData];
+    if (sectorFilter === 'Current Investment') {
+      data = data.filter(s => s.currentInvestment > 0);
+    }
+    data.sort((a, b) => {
+      const aInv = sectorFilter === 'Overall' ? a.overallInvestment : a.currentInvestment;
+      const bInv = sectorFilter === 'Overall' ? b.overallInvestment : b.currentInvestment;
+      return bInv - aInv;
+    });
+    return data;
+  }, [sectorData, sectorFilter]);
   const filteredCompanyData = useMemo(() => {
     let data = [...companyData];
     if (companyFilter === 'Current Investment') {
@@ -611,23 +667,61 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           ]}
         />
 
+        {/* Sector Filter Selector */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <button
+            onClick={() => setSectorFilter('Overall')}
+            className={`px-3 py-1 rounded text-sm ${sectorFilter === 'Overall' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Overall
+          </button>
+          <button
+            onClick={() => setSectorFilter('Current Investment')}
+            className={`px-3 py-1 rounded text-sm ${sectorFilter === 'Current Investment' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Current Investment
+          </button>
+        </div>
+
         {/* Investment and Profit by Sector (Bar Chart) */}
         <ChartContainer
-          title="Investment and Profit by Sector"
+          title={`Investment and Profit by Sector (${sectorFilter})`}
           type="bar"
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
-            xaxis: { categories: bySector.map(s => s.sector) },
+            xaxis: { categories: filteredSectorData.map(s => s.sector) },
             yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
-            tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
-            colors: [INVESTMENT_COLOR, PROFIT_COLOR],
+            tooltip: {
+              custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                const sector = filteredSectorData[dataPointIndex];
+                const investment = sectorFilter === 'Overall' ? sector.overallInvestment : sector.currentInvestment;
+                const profit = sectorFilter === 'Overall' ? sector.overallTotalProfit : sector.currentProfit;
+                const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
+                return `
+                  <div class="p-2 bg-white border border-gray-300 rounded shadow">
+                    <div class="font-bold">${sector.sector}</div>
+                    <div>Investment: ${formatCurrency(investment)}</div>
+                    <div>Profit/Loss: ${formatCurrency(profit)}</div>
+                    <div>Profit %: ${profitPct}%</div>
+                    <div>Number of Tickers: ${sector.tickerCount}</div>
+                  </div>
+                `;
+              }
+            },
+            colors: [INVESTMENT_COLOR, ...filteredSectorData.map(s => (sectorFilter === 'Overall' ? s.overallTotalProfit : s.currentProfit) >= 0 ? PROFIT_COLOR : LOSS_COLOR)],
             plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
             dataLabels: { enabled: false },
             grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
           }}
           series={[
-            { name: 'Investment', data: bySector.map(s => s.investment) },
-            { name: 'Profit', data: bySector.map(s => s.profit) }
+            {
+              name: 'Investment',
+              data: filteredSectorData.map(s => sectorFilter === 'Overall' ? s.overallInvestment : s.currentInvestment)
+            },
+            {
+              name: 'Profit/Loss',
+              data: filteredSectorData.map(s => sectorFilter === 'Overall' ? s.overallTotalProfit : s.currentProfit)
+            }
           ]}
         />
 
