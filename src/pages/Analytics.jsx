@@ -189,6 +189,8 @@ const calculateCompanyMetrics = (transactions = [], tickerPrices = {}) => {
       companyMap[tx.ticker] = {
         ticker: tx.ticker,
         sector: tx.sector || 'Unknown Sector',
+        assetType: tx['Asset Type'] || 'Unknown Asset Type',
+        broker: tx.broker || 'Unknown Broker',
         buys: [],
         sells: [],
         overallInvestment: 0,
@@ -314,6 +316,78 @@ const calculateSectorMetrics = (companyData = []) => {
   return Object.values(sectorMap);
 };
 
+/**
+ * Aggregates company metrics by asset type.
+ * @param {Array<Object>} companyData - Array of company metrics from calculateCompanyMetrics
+ * @returns {Array<Object>} - Array of asset type metrics
+ */
+const calculateAssetTypeMetrics = (companyData = []) => {
+  const assetTypeMap = {};
+
+  companyData.forEach(company => {
+    const assetType = company.assetType || 'Unknown Asset Type';
+    if (!assetTypeMap[assetType]) {
+      assetTypeMap[assetType] = {
+        assetType,
+        overallInvestment: 0,
+        realizedProfit: 0,
+        unrealizedProfit: 0,
+        overallTotalProfit: 0,
+        currentInvestment: 0,
+        currentProfit: 0,
+        currentValue: 0,
+        tickerCount: 0
+      };
+    }
+    assetTypeMap[assetType].overallInvestment += company.overallInvestment;
+    assetTypeMap[assetType].realizedProfit += company.realizedProfit;
+    assetTypeMap[assetType].unrealizedProfit += company.unrealizedProfit;
+    assetTypeMap[assetType].overallTotalProfit += company.overallTotalProfit;
+    assetTypeMap[assetType].currentInvestment += company.currentInvestment;
+    assetTypeMap[assetType].currentProfit += company.currentProfit;
+    assetTypeMap[assetType].currentValue += company.currentValue;
+    assetTypeMap[assetType].tickerCount += 1;
+  });
+
+  return Object.values(assetTypeMap);
+};
+
+/**
+ * Aggregates company metrics by broker.
+ * @param {Array<Object>} companyData - Array of company metrics from calculateCompanyMetrics
+ * @returns {Array<Object>} - Array of broker metrics
+ */
+const calculateBrokerMetrics = (companyData = []) => {
+  const brokerMap = {};
+
+  companyData.forEach(company => {
+    const broker = company.broker || 'Unknown Broker';
+    if (!brokerMap[broker]) {
+      brokerMap[broker] = {
+        broker,
+        overallInvestment: 0,
+        realizedProfit: 0,
+        unrealizedProfit: 0,
+        overallTotalProfit: 0,
+        currentInvestment: 0,
+        currentProfit: 0,
+        currentValue: 0,
+        tickerCount: 0
+      };
+    }
+    brokerMap[broker].overallInvestment += company.overallInvestment;
+    brokerMap[broker].realizedProfit += company.realizedProfit;
+    brokerMap[broker].unrealizedProfit += company.unrealizedProfit;
+    brokerMap[broker].overallTotalProfit += company.overallTotalProfit;
+    brokerMap[broker].currentInvestment += company.currentInvestment;
+    brokerMap[broker].currentProfit += company.currentProfit;
+    brokerMap[broker].currentValue += company.currentValue;
+    brokerMap[broker].tickerCount += 1;
+  });
+
+  return Object.values(brokerMap);
+};
+
 
 // --- Components ---
 
@@ -380,6 +454,8 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
   const [timeRange, setTimeRange] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('Overall');
   const [sectorFilter, setSectorFilter] = useState('Overall');
+  const [assetTypeFilter, setAssetTypeFilter] = useState('Overall');
+  const [brokerFilter, setBrokerFilter] = useState('Overall');
 
   // Use useMemo for aggregation performance
   const byDate = useMemo(
@@ -445,6 +521,38 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
     });
     return data;
   }, [sectorData, sectorFilter]);
+  const assetTypeData = useMemo(
+    () => calculateAssetTypeMetrics(companyData),
+    [companyData]
+  );
+  const filteredAssetTypeData = useMemo(() => {
+    let data = [...assetTypeData];
+    if (assetTypeFilter === 'Current Investment') {
+      data = data.filter(a => a.currentInvestment > 0);
+    }
+    data.sort((a, b) => {
+      const aInv = assetTypeFilter === 'Overall' ? a.overallInvestment : a.currentInvestment;
+      const bInv = assetTypeFilter === 'Overall' ? b.overallInvestment : b.currentInvestment;
+      return bInv - aInv;
+    });
+    return data;
+  }, [assetTypeData, assetTypeFilter]);
+  const brokerData = useMemo(
+    () => calculateBrokerMetrics(companyData),
+    [companyData]
+  );
+  const filteredBrokerData = useMemo(() => {
+    let data = [...brokerData];
+    if (brokerFilter === 'Current Investment') {
+      data = data.filter(b => b.currentInvestment > 0);
+    }
+    data.sort((a, b) => {
+      const aInv = brokerFilter === 'Overall' ? a.overallInvestment : a.currentInvestment;
+      const bInv = brokerFilter === 'Overall' ? b.overallInvestment : b.currentInvestment;
+      return bInv - aInv;
+    });
+    return data;
+  }, [brokerData, brokerFilter]);
   const filteredCompanyData = useMemo(() => {
     let data = [...companyData];
     if (companyFilter === 'Current Investment') {
@@ -725,43 +833,121 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           ]}
         />
 
+        {/* Asset Type Filter Selector */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <button
+            onClick={() => setAssetTypeFilter('Overall')}
+            className={`px-3 py-1 rounded text-sm ${assetTypeFilter === 'Overall' ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Overall
+          </button>
+          <button
+            onClick={() => setAssetTypeFilter('Current Investment')}
+            className={`px-3 py-1 rounded text-sm ${assetTypeFilter === 'Current Investment' ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Current Investment
+          </button>
+        </div>
+
         {/* Investment and Current Value by Asset Type (Bar Chart) */}
         <ChartContainer
-          title="Investment and Current Value by Asset Type"
+          title={`Investment and Current Value by Asset Type (${assetTypeFilter})`}
           type="bar"
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
-            xaxis: { categories: byAssetType.map(a => a['Asset Type']) },
+            xaxis: { categories: filteredAssetTypeData.map(a => a.assetType) },
             yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
-            tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
-            colors: [INVESTMENT_COLOR, PROFIT_COLOR],
+            tooltip: {
+              custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                const assetType = filteredAssetTypeData[dataPointIndex];
+                const investment = assetTypeFilter === 'Overall' ? assetType.overallInvestment : assetType.currentInvestment;
+                const currentValue = assetType.currentValue;
+                const profit = currentValue - investment;
+                const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
+                return `
+                  <div class="p-2 bg-white border border-gray-300 rounded shadow">
+                    <div class="font-bold">${assetType.assetType}</div>
+                    <div>Investment: ${formatCurrency(investment)}</div>
+                    <div>Current Value: ${formatCurrency(currentValue)}</div>
+                    <div>Profit/Loss: ${formatCurrency(profit)}</div>
+                    <div>Return %: ${profitPct}%</div>
+                  </div>
+                `;
+              }
+            },
+            colors: [INVESTMENT_COLOR, '#10B981'], // Grey for investment, green for current value
             plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
             dataLabels: { enabled: false },
             grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
           }}
           series={[
-            { name: 'Investment', data: byAssetType.map(a => a.investment) },
-            { name: 'Current Value', data: byAssetType.map(a => a.currentValue) }
+            {
+              name: 'Investment',
+              data: filteredAssetTypeData.map(a => assetTypeFilter === 'Overall' ? a.overallInvestment : a.currentInvestment)
+            },
+            {
+              name: 'Current Value',
+              data: filteredAssetTypeData.map(a => a.currentValue)
+            }
           ]}
         />
 
+        {/* Broker Filter Selector */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <button
+            onClick={() => setBrokerFilter('Overall')}
+            className={`px-3 py-1 rounded text-sm ${brokerFilter === 'Overall' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Overall
+          </button>
+          <button
+            onClick={() => setBrokerFilter('Current Investment')}
+            className={`px-3 py-1 rounded text-sm ${brokerFilter === 'Current Investment' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Current Investment
+          </button>
+        </div>
+
         {/* Investment and Current Value by Broker (Bar Chart) */}
         <ChartContainer
-          title="Investment and Current Value by Broker"
+          title={`Investment and Current Value by Broker (${brokerFilter})`}
           type="bar"
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
-            xaxis: { categories: byBroker.map(b => b.broker) },
+            xaxis: { categories: filteredBrokerData.map(b => b.broker) },
             yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
-            tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
-            colors: [INVESTMENT_COLOR, PROFIT_COLOR],
+            tooltip: {
+              custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                const broker = filteredBrokerData[dataPointIndex];
+                const investment = brokerFilter === 'Overall' ? broker.overallInvestment : broker.currentInvestment;
+                const currentValue = broker.currentValue;
+                const profit = currentValue - investment;
+                const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
+                return `
+                  <div class="p-2 bg-white border border-gray-300 rounded shadow">
+                    <div class="font-bold">${broker.broker}</div>
+                    <div>Investment: ${formatCurrency(investment)}</div>
+                    <div>Current Value: ${formatCurrency(currentValue)}</div>
+                    <div>Profit/Loss: ${formatCurrency(profit)}</div>
+                    <div>Return %: ${profitPct}%</div>
+                  </div>
+                `;
+              }
+            },
+            colors: [INVESTMENT_COLOR, '#10B981'], // Grey for investment, green for current value
             plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
             dataLabels: { enabled: false },
             grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
           }}
           series={[
-            { name: 'Investment', data: byBroker.map(b => b.investment) },
-            { name: 'Current Value', data: byBroker.map(b => b.currentValue) }
+            {
+              name: 'Investment',
+              data: filteredBrokerData.map(b => brokerFilter === 'Overall' ? b.overallInvestment : b.currentInvestment)
+            },
+            {
+              name: 'Current Value',
+              data: filteredBrokerData.map(b => b.currentValue)
+            }
           ]}
         />
       </div>
