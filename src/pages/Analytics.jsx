@@ -1,20 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  LabelList,
-} from 'recharts';
+import ReactApexChart from 'react-apexcharts';
 
 // --- Constants & Configuration ---
 
@@ -59,6 +44,24 @@ const formatPercentage = (value = 0) => {
 };
 
 /**
+ * Formats a date as "DD MMM" if current year, "DD MMM YYYY" if previous year.
+ * @param {string|Date} date
+ * @returns {string}
+ */
+const formatDate = (date) => {
+  const d = new Date(date);
+  const currentYear = new Date().getFullYear();
+  const year = d.getFullYear();
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const day = d.getDate();
+  if (year === currentYear) {
+    return `${day} ${month}`;
+  } else {
+    return `${day} ${month} ${year}`;
+  }
+};
+
+/**
  * Aggregates portfolio current value over time based on current market prices.
  * @param {Array<Object>} transactions
  * @param {Object} tickerPrices - Map of ticker to current price
@@ -78,7 +81,8 @@ const aggregateByDate = (transactions = [], tickerPrices = {}) => {
     const currentPrice = tickerPrices[t.ticker] || 0;
     runningValue += t.qty * currentPrice;
     const dateKey = new Date(t.date).toLocaleDateString();
-    map[dateKey] = { date: dateKey, value: runningValue };
+    const formattedDate = formatDate(t.date);
+    map[dateKey] = { date: formattedDate, value: runningValue };
   });
 
   return Object.values(map);
@@ -175,20 +179,26 @@ function StatCard({ label, value, positive = true }) {
 }
 
 /**
- * A wrapper component for all Recharts charts to ensure consistent styling.
+ * A wrapper component for all ApexCharts charts to ensure consistent styling.
  * @param {Object} props
  * @param {string} props.title
  * @param {number} [props.height=220]
- * @param {JSX.Element} props.children
+ * @param {Object} props.options
+ * @param {Array} props.series
+ * @param {string} props.type
  * @returns {JSX.Element}
  */
-const ChartContainer = ({ title, height = 220, children }) => (
+const ChartContainer = ({ title, height = 220, options, series, type }) => (
   <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-6 shadow-lg">
     <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-4">{title}</h3>
     <div style={{ height, minHeight: height }} className="w-full">
-      <ResponsiveContainer width="100%" height="100%" minHeight={height}>
-        {children}
-      </ResponsiveContainer>
+      <ReactApexChart
+        options={options}
+        series={series}
+        type={type}
+        height="100%"
+        width="100%"
+      />
     </div>
   </div>
 );
@@ -209,7 +219,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }
   // Use useMemo for aggregation performance
   const byDate = useMemo(
     () => portfolioData && portfolioData.length > 0
-      ? portfolioData.map(p => ({ date: p.Date, value: parseFloat(p['Current Value']) || 0 }))
+      ? portfolioData.map(p => ({ date: formatDate(p.Date), value: parseFloat(p['Current Value']) || 0 }))
       : aggregateByDate(transactions, tickerPrices),
     [transactions, tickerPrices, portfolioData]
   );
@@ -230,16 +240,6 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }
     [transactions, tickerPrices]
   );
 
-  // Helper for BarChart Tooltip formatting
-  const barTooltipFormatter = (v, name) => {
-    const label =
-      name === 'investment'
-        ? 'Investment'
-        : name === 'profit'
-        ? 'Profit'
-        : 'Current Value';
-    return [formatCurrency(v), label];
-  };
 
   return (
     // Main layout is fully responsive: single column on mobile, 2/3 + 1/3 split on desktop
@@ -271,70 +271,101 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }
         </div>
         
         {/* Portfolio Value Over Time (Line Chart) */}
-        <ChartContainer title="Portfolio Value Over Time">
-          <LineChart data={byDate}>
-            <CartesianGrid strokeDasharray="5 5" stroke="#e0e0e0" />
-            <XAxis dataKey="date" stroke="#64748B" />
-            <YAxis tickFormatter={(v) => formatCurrency(v, false)} stroke="#64748B" />
-            <Tooltip formatter={(v) => [formatCurrency(v), 'Value']} />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={LINE_COLOR}
-              strokeWidth={3}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
-          </LineChart>
-        </ChartContainer>
+        <ChartContainer
+          title="Portfolio Value Over Time"
+          type="line"
+          options={{
+            chart: { type: 'line', toolbar: { show: false } },
+            xaxis: { categories: byDate.map(d => d.date) },
+            yaxis: { labels: { formatter: (v) => formatCurrency(v) } },
+            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            colors: [LINE_COLOR],
+            stroke: { width: 3, curve: 'smooth' },
+            markers: { size: 0, hover: { size: 4 } },
+            grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
+          }}
+          series={[{ name: 'Value', data: byDate.map(d => d.value) }]}
+        />
 
         {/* Investment and Profit by Company (Bar Chart) */}
-        <ChartContainer title="Investment and Profit by Company">
-          <BarChart data={Object.values(holdings)}>
-            <CartesianGrid strokeDasharray="5 5" stroke="#e0e0e0" />
-            <XAxis dataKey="ticker" stroke="#64748B" />
-            <YAxis tickFormatter={(v) => formatCurrency(v, false)} stroke="#64748B" />
-            <Tooltip formatter={barTooltipFormatter} />
-            <Bar dataKey="investment" fill={INVESTMENT_COLOR} name="Investment" />
-            <Bar dataKey="profit" fill={PROFIT_COLOR} name="Profit" />
-          </BarChart>
-        </ChartContainer>
+        <ChartContainer
+          title="Investment and Profit by Company"
+          type="bar"
+          options={{
+            chart: { type: 'bar', toolbar: { show: false } },
+            xaxis: { categories: Object.values(holdings).map(h => h.ticker) },
+            yaxis: { labels: { formatter: (v) => formatCurrency(v) } },
+            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            colors: [INVESTMENT_COLOR, PROFIT_COLOR],
+            plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+            dataLabels: { enabled: false },
+            grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
+          }}
+          series={[
+            { name: 'Investment', data: Object.values(holdings).map(h => h.investment) },
+            { name: 'Profit', data: Object.values(holdings).map(h => h.profit) }
+          ]}
+        />
 
         {/* Investment and Profit by Sector (Bar Chart) */}
-        <ChartContainer title="Investment and Profit by Sector">
-          <BarChart data={bySector}>
-            <CartesianGrid strokeDasharray="5 5" stroke="#e0e0e0" />
-            <XAxis dataKey="sector" stroke="#64748B" />
-            <YAxis tickFormatter={(v) => formatCurrency(v, false)} stroke="#64748B" />
-            <Tooltip formatter={barTooltipFormatter} />
-            <Bar dataKey="investment" fill={INVESTMENT_COLOR} name="Investment" />
-            <Bar dataKey="profit" fill={PROFIT_COLOR} name="Profit" />
-          </BarChart>
-        </ChartContainer>
+        <ChartContainer
+          title="Investment and Profit by Sector"
+          type="bar"
+          options={{
+            chart: { type: 'bar', toolbar: { show: false } },
+            xaxis: { categories: bySector.map(s => s.sector) },
+            yaxis: { labels: { formatter: (v) => formatCurrency(v) } },
+            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            colors: [INVESTMENT_COLOR, PROFIT_COLOR],
+            plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+            dataLabels: { enabled: false },
+            grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
+          }}
+          series={[
+            { name: 'Investment', data: bySector.map(s => s.investment) },
+            { name: 'Profit', data: bySector.map(s => s.profit) }
+          ]}
+        />
 
         {/* Investment and Current Value by Asset Type (Bar Chart) */}
-        <ChartContainer title="Investment and Current Value by Asset Type">
-          <BarChart data={byAssetType}>
-            <CartesianGrid strokeDasharray="5 5" stroke="#e0e0e0" />
-            <XAxis dataKey="Asset Type" stroke="#64748B" />
-            <YAxis tickFormatter={(v) => formatCurrency(v, false)} stroke="#64748B" />
-            <Tooltip formatter={barTooltipFormatter} />
-            <Bar dataKey="investment" fill={INVESTMENT_COLOR} name="Investment" />
-            <Bar dataKey="currentValue" fill={PROFIT_COLOR} name="Current Value" />
-          </BarChart>
-        </ChartContainer>
+        <ChartContainer
+          title="Investment and Current Value by Asset Type"
+          type="bar"
+          options={{
+            chart: { type: 'bar', toolbar: { show: false } },
+            xaxis: { categories: byAssetType.map(a => a['Asset Type']) },
+            yaxis: { labels: { formatter: (v) => formatCurrency(v) } },
+            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            colors: [INVESTMENT_COLOR, PROFIT_COLOR],
+            plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+            dataLabels: { enabled: false },
+            grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
+          }}
+          series={[
+            { name: 'Investment', data: byAssetType.map(a => a.investment) },
+            { name: 'Current Value', data: byAssetType.map(a => a.currentValue) }
+          ]}
+        />
 
         {/* Investment and Current Value by Broker (Bar Chart) */}
-        <ChartContainer title="Investment and Current Value by Broker">
-          <BarChart data={byBroker}>
-            <CartesianGrid strokeDasharray="5 5" stroke="#e0e0e0" />
-            <XAxis dataKey="broker" stroke="#64748B" />
-            <YAxis tickFormatter={(v) => formatCurrency(v, false)} stroke="#64748B" />
-            <Tooltip formatter={barTooltipFormatter} />
-            <Bar dataKey="investment" fill={INVESTMENT_COLOR} name="Investment" />
-            <Bar dataKey="currentValue" fill={PROFIT_COLOR} name="Current Value" />
-          </BarChart>
-        </ChartContainer>
+        <ChartContainer
+          title="Investment and Current Value by Broker"
+          type="bar"
+          options={{
+            chart: { type: 'bar', toolbar: { show: false } },
+            xaxis: { categories: byBroker.map(b => b.broker) },
+            yaxis: { labels: { formatter: (v) => formatCurrency(v) } },
+            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            colors: [INVESTMENT_COLOR, PROFIT_COLOR],
+            plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+            dataLabels: { enabled: false },
+            grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
+          }}
+          series={[
+            { name: 'Investment', data: byBroker.map(b => b.investment) },
+            { name: 'Current Value', data: byBroker.map(b => b.currentValue) }
+          ]}
+        />
       </div>
 
       {/* Right Column (Side Panel - stacks below charts on mobile) */}
@@ -362,57 +393,24 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }
           </ul>
         </div>
 
-        {/* Current Value by Sector (Pie Chart - Converted to Internal Label/Legend Style) */}
-        <ChartContainer title="Current Value by Sector" height={350}>
-          <PieChart>
-            <Pie
-              data={bySector}
-              dataKey="currentValue"
-              nameKey="sector"
-              cx="50%"
-              cy="50%"
-              innerRadius={0}
-              outerRadius={120} // Maintains the size
-              paddingAngle={2}
-              // REMOVE external label and labelLine props
-              // label={...}
-              // labelLine={...}
-              fill="#8884d8"
-            >
-              {bySector.map((entry, index) => (
-                <Cell
-                  key={`cell-${entry.sector}`}
-                  fill={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]}
-                />
-              ))}
-
-              {/* ADD LabelList for internal percentage labels (like the example image) */}
-              <LabelList
-                // Calculate percentage for display inside the slice
-                formatter={(value) => {
-                  // Find the entry to get total value for percentage calculation
-                  const total = bySector.reduce((sum, entry) => sum + entry.currentValue, 0);
-                  const percent = (value / total) * 100;
-                  return `${Math.round(percent)}%`; // Format as integer percentage
-                }}
-                dataKey="currentValue" // We use currentValue to calculate the percentage
-                position="inside"
-                fill="#ffffff" // White text for visibility inside colored slices
-                fontWeight="bold"
-                fontSize={14}
-              />
-            </Pie>
-
-            {/* Add Legend below Tooltip for sector names */}
-            <Tooltip formatter={(v) => [formatCurrency(v), 'Current Value']} />
-            <Legend
-                layout="horizontal"
-                verticalAlign="bottom"
-                align="center"
-                wrapperStyle={{ paddingTop: '20px' }} // Spacing for the legend
-            />
-          </PieChart>
-        </ChartContainer>
+        {/* Current Value by Sector (Pie Chart) */}
+        <ChartContainer
+          title="Current Value by Sector"
+          height={350}
+          type="pie"
+          options={{
+            labels: bySector.map(s => s.sector),
+            colors: PIE_CHART_COLORS,
+            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            legend: { position: 'bottom' },
+            dataLabels: {
+              enabled: true,
+              formatter: (val) => `${Math.round(val)}%`,
+              style: { fontSize: '14px', fontWeight: 'bold', colors: ['#ffffff'] }
+            }
+          }}
+          series={bySector.map(s => s.currentValue)}
+        />
 
       </div>
     </div>
