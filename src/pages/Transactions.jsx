@@ -121,12 +121,12 @@ export default function Transactions({ transactions, setTransactions, tickers })
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broker</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {transactions.map(t => (
-              <tr key={t.id} className="hover:bg-gray-50">
+              <tr key={t.id} className={`hover:bg-gray-50 ${t['type'] === 'BUY' ? 'bg-green-50' : t['type'] === 'SELL' ? 'bg-red-50' : ''}`}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(t.date).toLocaleDateString()}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{t.ticker}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.company}</td>
@@ -136,7 +136,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{t.price}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t.broker}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{t['type']}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white">
                   <button onClick={() => handleEdit(t)} className="text-indigo-600 hover:text-indigo-900 mr-4 text-lg" title="Edit">✏️</button>
                   <button onClick={() => handleDelete(t.id)} disabled={deletingId === t.id} className="text-red-600 hover:text-red-900 text-lg disabled:opacity-50" title="Delete">
                     {deletingId === t.id ? (
