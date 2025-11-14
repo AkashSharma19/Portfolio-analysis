@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
 // --- Constants & Configuration ---
@@ -230,11 +230,21 @@ const ChartContainer = ({ title, height = 220, options, series, type }) => (
 function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, profitData }) {
   const { totalInvestment, currentInvestment, currentValue, realizedProfit, unrealizedProfit, totalProfit, profitPercentage } = analytics;
 
+  const [timeRange, setTimeRange] = useState('all');
+
   // Use useMemo for aggregation performance
   const byDate = useMemo(
     () => portfolioData && portfolioData.length > 0
-      ? portfolioData.map(p => ({ date: formatDate(p.Date), value: parseFloat(p['Current Value']) || 0 }))
-      : aggregateByDate(transactions, tickerPrices),
+      ? portfolioData.map(p => ({
+          date: formatDate(p.Date),
+          timestamp: new Date(p.Date).getTime(),
+          value: parseFloat(p['Current Value']) || 0
+        }))
+      : aggregateByDate(transactions, tickerPrices).map(d => ({
+          date: d.date,
+          timestamp: new Date(d.date).getTime(),
+          value: d.value
+        })),
     [transactions, tickerPrices, portfolioData]
   );
   const holdings = useMemo(
@@ -254,13 +264,64 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
     [transactions, tickerPrices]
   );
   const profitOverTime = useMemo(() => {
-    if (!profitData || profitData.length === 0) return [];
-    const sorted = [...profitData].sort((a, b) => new Date(a.Date) - new Date(b.Date));
-    const last50 = sorted.slice(-50);
-    const result = last50.map(p => ({ timestamp: new Date(p.Date).getTime(), profit: parseFloat(p['Profit %']) || 0 }));
-    console.log('Profit over time:', result);
+    if (!portfolioData || portfolioData.length === 0 || !transactions || transactions.length === 0) return [];
+
+    // Sort portfolio data by date
+    const sortedPortfolio = [...portfolioData].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+
+    // Sort transactions by date
+    const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const result = sortedPortfolio.map(p => {
+      const date = new Date(p.Date);
+      const portfolioValue = parseFloat(p['Current Value']) || 0;
+
+      // Calculate net invested up to this date
+      let netInvested = 0;
+      for (const tx of sortedTransactions) {
+        if (new Date(tx.date) > date) break;
+        const amount = tx.qty * tx.price;
+        if (tx.type === 'BUY') {
+          netInvested += amount;
+        } else if (tx.type === 'SELL') {
+          netInvested -= amount;
+        }
+      }
+
+      // If net invested is zero or negative, set to zero
+      if (netInvested <= 0) netInvested = 0;
+
+      const profit = portfolioValue - netInvested;
+      const profitPct = netInvested > 0 ? (profit / netInvested) * 100 : 0;
+
+      return {
+        timestamp: date.getTime(),
+        profit: profitPct,
+        date: formatDate(p.Date),
+        portfolioValue,
+        netInvested,
+        absoluteProfit: profit
+      };
+    });
+
+    console.log('Calculated Profit over time:', result);
     return result;
-  }, [profitData]);
+  }, [portfolioData, transactions]);
+
+  const filteredByDate = useMemo(() => {
+    if (!byDate || byDate.length === 0) return [];
+
+    const now = new Date();
+    let days = 0;
+    switch (timeRange) {
+      case '30d': days = 30; break;
+      case '3m': days = 90; break;
+      case '1y': days = 365; break;
+      default: return byDate;
+    }
+    const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    return byDate.filter(d => new Date(d.timestamp) >= cutoff);
+  }, [byDate, timeRange]);
 
 
   return (
@@ -306,22 +367,50 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           />
         </div>
 
-        {/* Profit % Over Time (Line Chart) */}
+        {/* Time Range Selector */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <button
+            onClick={() => setTimeRange('30d')}
+            className={`px-3 py-1 rounded text-sm ${timeRange === '30d' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Last 30 Days
+          </button>
+          <button
+            onClick={() => setTimeRange('3m')}
+            className={`px-3 py-1 rounded text-sm ${timeRange === '3m' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Last 3 Months
+          </button>
+          <button
+            onClick={() => setTimeRange('1y')}
+            className={`px-3 py-1 rounded text-sm ${timeRange === '1y' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            Last 1 Year
+          </button>
+          <button
+            onClick={() => setTimeRange('all')}
+            className={`px-3 py-1 rounded text-sm ${timeRange === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            All Time
+          </button>
+        </div>
+
+        {/* Portfolio Value Over Time (Line Chart) */}
         <ChartContainer
-          title="Profit % Over Time"
+          title="Portfolio Value Over Time"
           type="line"
           options={{
             chart: { type: 'line', toolbar: { show: false } },
             xaxis: { type: 'datetime' },
-            yaxis: { labels: { formatter: (v) => formatPercentage(v) } },
-            tooltip: { y: { formatter: (v) => formatPercentage(v) } },
-            colors: [PROFIT_COLOR],
+            yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
+            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+            colors: [LINE_COLOR],
             stroke: { curve: 'smooth', width: 3 },
             markers: { size: 0 },
             grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
           }}
           series={[
-            { name: 'Profit %', data: profitOverTime.map(p => [p.timestamp, p.profit]) }
+            { name: 'Portfolio Value', data: filteredByDate.map(d => [d.timestamp, d.value]) }
           ]}
         />
 
