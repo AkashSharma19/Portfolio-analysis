@@ -52,15 +52,10 @@ export default function App() {
 
   const fetchPortfolio = async () => {
     try {
-      console.log('Fetching portfolio...');
       const res = await fetch("https://script.google.com/macros/s/AKfycbwOeMng4mG4DBztvrhFTm4f9iIVtMlrQHhz1IPFER5PGbx9AJKMZYjcecJ4oI7JqwQh/exec?action=get_portfolio", { cache: 'no-cache' });
-      console.log('Portfolio response status:', res.status);
       const data = await res.json();
-      console.log('Portfolio data:', data);
       setPortfolioData(data.data || []);
-      console.log('Set portfolioData to:', data.data || []);
     } catch (error) {
-      console.log('Portfolio fetch error:', error);
       setPortfolioData([]);
     }
   };

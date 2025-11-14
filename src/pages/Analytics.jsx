@@ -197,7 +197,6 @@ const ChartContainer = ({ title, height = 220, children }) => (
  * Renders the main analytics dashboard panel.
  */
 function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }) {
-  console.log('AnalyticsPanel portfolioData:', portfolioData);
   const { totalInvestment, currentValue, profit } = analytics;
 
   // Calculate percentage
@@ -214,7 +213,6 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }
       : aggregateByDate(transactions, tickerPrices),
     [transactions, tickerPrices, portfolioData]
   );
-  console.log('byDate:', byDate);
   const holdings = useMemo(
     () => aggregateHoldings(transactions, tickerPrices),
     [transactions, tickerPrices]
