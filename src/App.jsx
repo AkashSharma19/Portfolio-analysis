@@ -52,13 +52,29 @@ export default function App() {
 
   const fetchPortfolio = async () => {
     try {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbwOeMng4mG4DBztvrhFTm4f9iIVtMlrQHhz1IPFER5PGbx9AJKMZYjcecJ4oI7JqwQh/exec?action=get_portfolio", { cache: 'no-cache' });
-      const data = await res.json();
+      const res = await fetch("https://script.google.com/macros/s/AKfycbwOeMng4mG4DBztvrhFTm4f9iIVtMlrQHhz1IPFER5PGbx9AJKMZYjcecJ4oI7JqwQh/exec?action=get_portfolio");
+      const text = await res.text();
+      console.log('Portfolio response text:', text.substring(0, 200));
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // Parse HTML response
+        const match = text.match(/window\.apiResponse\s*=\s*({.+});/);
+        if (match) {
+          data = JSON.parse(match[1]);
+        } else {
+          data = { data: [] };
+        }
+      }
+      console.log('Parsed portfolio data:', data);
       setPortfolioData(data.data || []);
     } catch (error) {
+      console.error('Error fetching portfolio data:', error);
       setPortfolioData([]);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
@@ -76,7 +92,7 @@ export default function App() {
 
           <div className="p-6">
             {tab === "analytics" ? (
-              <Analytics analytics={analytics} transactions={transactions} tickerPrices={tickerPrices} portfolioData={portfolioData} loading={loading} />
+              <Analytics analytics={analytics} transactions={transactions} tickerPrices={tickerPrices} portfolioData={portfolioData} profitData={portfolioData} loading={loading} />
             ) : (
               <Transactions transactions={transactions} setTransactions={setTransactions} tickers={tickers} />
             )}

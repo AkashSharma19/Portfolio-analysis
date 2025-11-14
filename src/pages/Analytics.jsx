@@ -206,7 +206,7 @@ const ChartContainer = ({ title, height = 220, options, series, type }) => (
 /**
  * Renders the main analytics dashboard panel.
  */
-function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }) {
+function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, profitData }) {
   const { totalInvestment, currentValue, profit } = analytics;
 
   // Calculate percentage
@@ -239,6 +239,14 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }
     () => aggregateByAssetType(transactions, tickerPrices),
     [transactions, tickerPrices]
   );
+  const profitOverTime = useMemo(() => {
+    if (!profitData || profitData.length === 0) return [];
+    const sorted = [...profitData].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+    const last50 = sorted.slice(-50);
+    const result = last50.map(p => ({ timestamp: new Date(p.Date).getTime(), profit: parseFloat(p['Profit %']) || 0 }));
+    console.log('Profit over time:', result);
+    return result;
+  }, [profitData]);
 
 
   return (
@@ -269,22 +277,24 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }
             positive={profit >= 0}
           />
         </div>
-        
-        {/* Portfolio Value Over Time (Line Chart) */}
+
+        {/* Profit % Over Time (Line Chart) */}
         <ChartContainer
-          title="Portfolio Value Over Time"
+          title="Profit % Over Time"
           type="line"
           options={{
             chart: { type: 'line', toolbar: { show: false } },
-            xaxis: { categories: byDate.map(d => d.date) },
-            yaxis: { labels: { formatter: (v) => formatCurrency(v) } },
-            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
-            colors: [LINE_COLOR],
-            stroke: { width: 3, curve: 'smooth' },
-            markers: { size: 0, hover: { size: 4 } },
+            xaxis: { type: 'datetime' },
+            yaxis: { labels: { formatter: (v) => formatPercentage(v) } },
+            tooltip: { y: { formatter: (v) => formatPercentage(v) } },
+            colors: [PROFIT_COLOR],
+            stroke: { curve: 'smooth', width: 3 },
+            markers: { size: 4, colors: [PROFIT_COLOR] },
             grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
           }}
-          series={[{ name: 'Value', data: byDate.map(d => d.value) }]}
+          series={[
+            { name: 'Profit %', data: profitOverTime.map(p => [p.timestamp, p.profit]) }
+          ]}
         />
 
         {/* Investment and Profit by Company (Bar Chart) */}
@@ -418,7 +428,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData }
 }
 
 
-export default function Analytics({ analytics, transactions, tickerPrices, portfolioData, loading }) {
+export default function Analytics({ analytics, transactions, tickerPrices, portfolioData, profitData, loading }) {
   return (
     <div className="font-sans p-4 sm:p-0">
       {loading && (
@@ -437,6 +447,8 @@ export default function Analytics({ analytics, transactions, tickerPrices, portf
         analytics={analytics}
         transactions={transactions}
         tickerPrices={tickerPrices}
+        portfolioData={portfolioData}
+        profitData={profitData}
       />
     </div>
   );
