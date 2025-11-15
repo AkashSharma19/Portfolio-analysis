@@ -148,7 +148,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto sm:p-6">
         <div className="mt-6 bg-white rounded-2xl shadow-md">
           <div className="sticky top-0 bg-white z-10 flex items-center gap-2 p-4 border-b">
             <TabButton active={tab === "analytics"} onClick={() => setTab("analytics")}>Analytics</TabButton>
@@ -158,7 +158,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="sm:p-6">
             {tab === "analytics" ? (
               <Analytics analytics={analytics} transactions={transactions} tickerPrices={tickerPrices} portfolioData={portfolioData} profitData={portfolioData} loading={loading} />
             ) : (
