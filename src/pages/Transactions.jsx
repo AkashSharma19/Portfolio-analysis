@@ -158,7 +158,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
   );
 
   return (
-    <div>
+    <div className="p-6 md:p-0">
       {loading && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <Loader />
