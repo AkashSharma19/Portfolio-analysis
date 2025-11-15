@@ -149,8 +149,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
       <div className="max-w-6xl mx-auto p-6">
-        <div className="mt-6 bg-white rounded-2xl shadow-md overflow-hidden">
-          <div className="flex items-center gap-2 p-4 border-b">
+        <div className="mt-6 bg-white rounded-2xl shadow-md">
+          <div className="sticky top-0 bg-white z-10 flex items-center gap-2 p-4 border-b">
             <TabButton active={tab === "analytics"} onClick={() => setTab("analytics")}>Analytics</TabButton>
             <TabButton active={tab === "transactions"} onClick={() => setTab("transactions")}>Transactions</TabButton>
             <div className="ml-auto flex items-center gap-2">
