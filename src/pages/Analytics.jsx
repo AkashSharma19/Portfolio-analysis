@@ -445,32 +445,70 @@ function StatCard({ label, value, positive = true, icon }) {
 }
 
 /**
+ * SVG component for no data state.
+ * @returns {JSX.Element}
+ */
+const NoDataSVG = () => (
+  <div className="flex flex-col items-center justify-center h-full text-gray-500">
+    <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="60" cy="60" r="45" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3"/>
+      <path d="M45 45 L75 45 L75 75 L45 75 Z" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M60 35 L60 45 M50 40 L70 40" stroke="currentColor" strokeWidth="2"/>
+      <circle cx="60" cy="60" r="8" fill="none" stroke="currentColor" strokeWidth="2"/>
+      <path d="M55 55 L65 65 M65 55 L55 65" stroke="currentColor" strokeWidth="2"/>
+    </svg>
+    <p className="mt-4 text-lg font-medium text-center">No Analytics Data Yet</p>
+    <p className="mt-2 text-sm text-center text-gray-400">Add transactions to get started with portfolio insights</p>
+  </div>
+);
+
+/**
  * A wrapper component for all ApexCharts charts with modern styling and animations.
  * @param {Object} props
  * @param {string} props.title
+ * @param {string} [props.infoText] - Optional tooltip text for info icon
  * @param {number} [props.height=220]
  * @param {Object} props.options
  * @param {Array} props.series
  * @param {string} props.type
  * @returns {JSX.Element}
  */
-const ChartContainer = ({ title, height = 220, options, series, type }) => (
-  <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-[1.02] animate-fade-in">
-    <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 flex items-center">
-      <span className="mr-2">📊</span>
-      {title}
-    </h3>
-    <div style={{ height, minHeight: height }} className="w-full">
-      <ReactApexChart
-        options={options}
-        series={series}
-        type={type}
-        height="100%"
-        width="100%"
-      />
+const ChartContainer = ({ title, infoText, height = 220, options, series, type }) => {
+  // Check if there's data to display
+  const hasData = type === 'pie'
+    ? series && series.length > 0
+    : series && series.length > 0 && series[0] && series[0].data && series[0].data.length > 0;
+
+  return (
+    <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-[1.02] animate-fade-in">
+      <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 flex items-center">
+        <span className="mr-2">📊</span>
+        {title}
+        {infoText && (
+          <span
+            className="ml-2 inline-flex items-center justify-center w-5 h-5 bg-blue-100 text-blue-600 rounded-full text-xs font-bold cursor-help"
+            title={infoText}
+          >
+            i
+          </span>
+        )}
+      </h3>
+      <div style={{ height, minHeight: height }} className="w-full">
+        {hasData ? (
+          <ReactApexChart
+            options={options}
+            series={series}
+            type={type}
+            height="100%"
+            width="100%"
+          />
+        ) : (
+          <NoDataSVG />
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /**
  * Renders the main analytics dashboard panel.
@@ -778,6 +816,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         {/* Portfolio Value Over Time (Line Chart) */}
         <ChartContainer
           title="Portfolio Value Over Time"
+          infoText="Track how your portfolio value has changed over time. Use the time range selector above to focus on specific periods and identify growth trends."
           type="line"
           options={{
             chart: { type: 'line', toolbar: { show: false } },
@@ -823,6 +862,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         {/* Investment and Profit by Company (Bar Chart) */}
         <ChartContainer
           title={`Investment and Profit by Company (${companyFilter})`}
+          infoText="Compare investments and profits across different companies. Switch between Overall and Current Investment views using the filter above to see different perspectives on your holdings."
           type="bar"
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
@@ -891,6 +931,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         {/* Investment and Profit by Sector (Bar Chart) */}
         <ChartContainer
           title={`Investment and Profit by Sector (${sectorFilter})`}
+          infoText="Analyze performance by sector allocation. See which sectors are contributing most to your portfolio's growth and identify areas for rebalancing."
           type="bar"
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
@@ -959,6 +1000,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         {/* Investment and Current Value by Asset Type (Bar Chart) */}
         <ChartContainer
           title={`Investment and Current Value by Asset Type (${assetTypeFilter})`}
+          infoText="View your portfolio breakdown by asset type. Understand diversification and current valuations across different investment categories to optimize your asset allocation."
           type="bar"
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
@@ -1028,6 +1070,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         {/* Investment and Current Value by Broker (Bar Chart) */}
         <ChartContainer
           title={`Investment and Current Value by Broker (${brokerFilter})`}
+          infoText="Compare performance across different brokers. See which brokers are handling your most valuable investments and assess their contribution to your portfolio."
           type="bar"
           options={{
             chart: { type: 'bar', toolbar: { show: false } },
@@ -1095,6 +1138,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         {/* Current Value by Sector (Pie Chart) */}
         <ChartContainer
           title="Current Value by Sector"
+          infoText="Visualize your current portfolio allocation by sector. The pie chart shows the percentage distribution of your holdings, helping you assess diversification."
           height={350}
           type="pie"
           options={{
