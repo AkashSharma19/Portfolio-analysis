@@ -291,14 +291,18 @@ export default function Transactions({ transactions, setTransactions, tickers })
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Ticker</label>
-                    <select value={form.ticker} onChange={(e)=>{
-                      const selectedTicker = e.target.value.toUpperCase();
-                      const selected = tickers.find(t => t.Tickers === selectedTicker);
-                      setForm({...form, ticker: selectedTicker, company: selected ? selected['Company Name'] : '', assetType: selected ? selected['Asset Type'] : '', sector: selected ? selected['Sector'] : ''});
-                    }} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
-                      <option value="">Select Ticker</option>
-                      {tickers.map(t => <option key={t.Tickers} value={t.Tickers}>{t.Tickers} - {t['Company Name']}</option>)}
-                    </select>
+                    <input
+                      list="tickers"
+                      value={form.ticker}
+                      onChange={(e) => {
+                        const selectedTicker = e.target.value.toUpperCase();
+                        const selected = tickers.find(t => t.Tickers === selectedTicker);
+                        setForm({...form, ticker: selectedTicker, company: selected ? selected['Company Name'] : '', assetType: selected ? selected['Asset Type'] : '', sector: selected ? selected['Sector'] : ''});
+                      }}
+                      placeholder="Search and select ticker..."
+                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -345,6 +349,9 @@ export default function Transactions({ transactions, setTransactions, tickers })
             </form>
             <datalist id="brokers">
               {uniqueBrokers.map(broker => <option key={broker} value={broker} />)}
+            </datalist>
+            <datalist id="tickers">
+              {tickers.map(t => <option key={t.Tickers} value={t.Tickers}>{t.Tickers} - {t['Company Name']}</option>)}
             </datalist>
           </div>
         </div>
