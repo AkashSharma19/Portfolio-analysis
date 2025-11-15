@@ -149,8 +149,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
       <div className="max-w-6xl mx-auto p-6">
-        <Header />
-
         <div className="mt-6 bg-white rounded-2xl shadow-md overflow-hidden">
           <div className="flex items-center gap-2 p-4 border-b">
             <TabButton active={tab === "analytics"} onClick={() => setTab("analytics")}>Analytics</TabButton>
@@ -173,23 +171,6 @@ export default function App() {
   );
 }
 
-function Header() {
-  return (
-    <header className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold">Portfolio Analyzer</h1>
-        <p className="text-sm text-slate-500 mt-1">Track holdings, transactions and profit & loss at a glance.</p>
-      </div>
-      <div className="hidden md:flex items-center gap-3">
-        <div className="text-right">
-          <div className="text-xs text-slate-500">You</div>
-          <div className="text-sm font-medium">Akash</div>
-        </div>
-        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">A</div>
-      </div>
-    </header>
-  );
-}
 
 function TabButton({ children, active, onClick }) {
   return (
