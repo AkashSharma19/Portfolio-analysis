@@ -699,463 +699,468 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
   ) : null;
 
   return (
-    // Main layout is fully responsive: single column on mobile, 2/3 + 1/3 split on desktop
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 font-sans">
+    <div className="font-sans">
 
-      {/* Summary Header */}
-      <div className="md:col-span-3 mb-6">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 sm:p-8 text-white shadow-lg relative">
-          <div className="absolute top-4 right-4 flex space-x-2">
-            <button
-              onClick={() => {
-                const csv = [
-                  ['Ticker', 'Investment', 'Current Value', 'Profit/Loss', 'Remaining Qty'],
-                  ...filteredCompanyData.map(c => [
-                    c.ticker,
-                    companyFilter === 'Overall' ? c.overallInvestment : c.currentInvestment,
-                    c.currentValue,
-                    companyFilter === 'Overall' ? c.overallTotalProfit : c.currentProfit,
-                    c.remainingQty
-                  ])
-                ].map(row => row.join(',')).join('\n');
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'portfolio-data.csv';
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition duration-200"
-              title="Export Data as CSV"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </button>
-          </div>
-          <h2 className="text-lg sm:text-xl font-bold mb-4">Portfolio Analytics Dashboard</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <p className="text-blue-100 text-xs">Total Portfolio Value</p>
-              <p className="text-lg font-bold">{formatCurrency(currentValue)}</p>
-            </div>
-            <div>
-              <p className="text-blue-100 text-xs">Total P/L</p>
-              <p className={`text-lg font-bold ${totalProfit >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                {formatCurrency(totalProfit)} ({formatPercentage(profitPercentage)})
-              </p>
-            </div>
-            {topCompany && (
-              <div>
-                <p className="text-blue-100 text-xs">Top Performer</p>
-                <p className="text-base font-bold">{topCompany.ticker}</p>
-                <p className="text-xs text-blue-100">
-                  {formatCurrency(companyFilter === 'Overall' ? topCompany.overallTotalProfit : topCompany.currentProfit)} profit
-                </p>
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-6">
+
+        {/* Highlights Section (2 parts) */}
+        <div className="md:col-span-2 space-y-2 sm:space-y-4">
+
+          {/* Summary Header */}
+          <div className="mb-6">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 sm:p-8 text-white shadow-lg relative">
+              <div className="absolute top-4 right-4 flex space-x-2">
+                <button
+                  onClick={() => {
+                    const csv = [
+                      ['Ticker', 'Investment', 'Current Value', 'Profit/Loss', 'Remaining Qty'],
+                      ...filteredCompanyData.map(c => [
+                        c.ticker,
+                        companyFilter === 'Overall' ? c.overallInvestment : c.currentInvestment,
+                        c.currentValue,
+                        companyFilter === 'Overall' ? c.overallTotalProfit : c.currentProfit,
+                        c.remainingQty
+                      ])
+                    ].map(row => row.join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'portfolio-data.csv';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition duration-200"
+                  title="Export Data as CSV"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </button>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Left Column (Charts - takes up full width on mobile) */}
-      <div className="md:col-span-2 space-y-2 sm:space-y-4">
-
-        {/* Stat Cards Section - 2 columns on mobile, 4 columns on medium and larger screens for better spacing */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          <StatCard
-            label="Total Investment"
-            value={formatCurrency(totalInvestment)}
-          />
-          <StatCard
-            label="Current Investment"
-            value={formatCurrency(currentInvestment)}
-          />
-          <StatCard
-            label="Current Value"
-            value={formatCurrency(currentValue)}
-          />
-          <StatCard
-            label="Realized P/L"
-            value={formatCurrency(realizedProfit)}
-            positive={realizedProfit >= 0}
-          />
-          <StatCard
-            label="Unrealized P/L"
-            value={formatCurrency(unrealizedProfit)}
-            positive={unrealizedProfit >= 0}
-          />
-          <StatCard
-            label="Total P/L"
-            value={formatCurrency(totalProfit)}
-            positive={totalProfit >= 0}
-          />
-          <StatCard
-            label="P/L %"
-            value={formatPercentage(profitPercentage)}
-            positive={totalProfit >= 0}
-          />
-        </div>
-
-        {/* Time Range Selector */}
-        <div className="mb-4">
-          <label className="block text-xs font-medium text-slate-700 mb-2">Time Range</label>
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="w-full sm:w-auto px-3 py-1 text-xs border border-slate-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-          >
-            <option value="30d">Last 30 Days</option>
-            <option value="3m">Last 3 Months</option>
-            <option value="1y">Last 1 Year</option>
-            <option value="all">All Time</option>
-          </select>
-        </div>
-
-        {/* Portfolio Value Over Time (Line Chart) */}
-        <ChartContainer
-          title="Portfolio Value Over Time"
-          infoText="Track how your portfolio value has changed over time. Use the time range selector above to focus on specific periods and identify growth trends."
-          type="line"
-          options={{
-            chart: { type: 'line', toolbar: { show: false } },
-            xaxis: { type: 'datetime' },
-            yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
-            tooltip: { y: { formatter: (v) => formatCurrency(v) } },
-            colors: [LINE_COLOR],
-            stroke: { curve: 'smooth', width: 3 },
-            markers: { size: 0 },
-            grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
-          }}
-          series={[
-            { name: 'Portfolio Value', data: filteredByDate.map(d => [d.timestamp, d.value]) }
-          ]}
-        />
-
-        {/* Company Filter Selector */}
-        <div className="mb-4">
-          <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
-            <button
-              onClick={() => setCompanyFilter('Overall')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                companyFilter === 'Overall'
-                  ? 'bg-white text-green-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-800'
-              }`}
-            >
-              Overall
-            </button>
-            <button
-              onClick={() => setCompanyFilter('Current Investment')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                companyFilter === 'Current Investment'
-                  ? 'bg-white text-green-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-800'
-              }`}
-            >
-              Current Investment
-            </button>
-          </div>
-        </div>
-
-        {/* Investment and Profit by Company (Bar Chart) */}
-        <ChartContainer
-          title={`Investment and Profit by Company (${companyFilter})`}
-          infoText="Compare investments and profits across different companies. Switch between Overall and Current Investment views using the filter above to see different perspectives on your holdings."
-          type="bar"
-          options={{
-            chart: { type: 'bar', toolbar: { show: false } },
-            xaxis: { categories: filteredCompanyData.map(c => c.ticker) },
-            yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
-            tooltip: {
-              custom: ({ series, seriesIndex, dataPointIndex, w }) => {
-                const company = filteredCompanyData[dataPointIndex];
-                const investment = companyFilter === 'Overall' ? company.overallInvestment : company.currentInvestment;
-                const profit = companyFilter === 'Overall' ? company.overallTotalProfit : company.currentProfit;
-                const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
-                return `
-                  <div class="p-2 bg-white border border-gray-300 rounded shadow">
-                    <div class="font-bold">${company.ticker}</div>
-                    <div>Investment: ${formatCurrency(investment)}</div>
-                    <div>Profit/Loss: ${formatCurrency(profit)}</div>
-                    <div>Profit %: ${profitPct}%</div>
-                    <div>Remaining Shares: ${company.remainingQty.toFixed(2)}</div>
+              <h2 className="text-lg sm:text-xl font-bold mb-4">Portfolio Analytics Dashboard</h2>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <p className="text-blue-100 text-xs">Total Portfolio Value</p>
+                  <p className="text-lg font-bold">{formatCurrency(currentValue)}</p>
+                </div>
+                <div>
+                  <p className="text-blue-100 text-xs">Total P/L</p>
+                  <p className={`text-lg font-bold ${totalProfit >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                    {formatCurrency(totalProfit)} ({formatPercentage(profitPercentage)})
+                  </p>
+                </div>
+                {topCompany && (
+                  <div>
+                    <p className="text-blue-100 text-xs">Top Performer</p>
+                    <p className="text-base font-bold">{topCompany.ticker}</p>
+                    <p className="text-xs text-blue-100">
+                      {formatCurrency(companyFilter === 'Overall' ? topCompany.overallTotalProfit : topCompany.currentProfit)} profit
+                    </p>
                   </div>
-                `;
-              }
-            },
-            colors: [INVESTMENT_COLOR, ...filteredCompanyData.map(c => (companyFilter === 'Overall' ? c.overallTotalProfit : c.currentProfit) >= 0 ? PROFIT_COLOR : LOSS_COLOR)],
-            plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
-            dataLabels: { enabled: false },
-            grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
-          }}
-          series={[
-            {
-              name: 'Investment',
-              data: filteredCompanyData.map(c => companyFilter === 'Overall' ? c.overallInvestment : c.currentInvestment)
-            },
-            {
-              name: 'Profit/Loss',
-              data: filteredCompanyData.map(c => companyFilter === 'Overall' ? c.overallTotalProfit : c.currentProfit)
-            }
-          ]}
-        />
-
-        {/* Sector Filter Selector */}
-        <div className="mb-4">
-          <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
-            <button
-              onClick={() => setSectorFilter('Overall')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                sectorFilter === 'Overall'
-                  ? 'bg-white text-blue-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-800'
-              }`}
-            >
-              Overall
-            </button>
-            <button
-              onClick={() => setSectorFilter('Current Investment')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                sectorFilter === 'Current Investment'
-                  ? 'bg-white text-blue-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-800'
-              }`}
-            >
-              Current Investment
-            </button>
-          </div>
-        </div>
-
-        {/* Investment and Profit by Sector (Bar Chart) */}
-        <ChartContainer
-          title={`Investment and Profit by Sector (${sectorFilter})`}
-          infoText="Analyze performance by sector allocation. See which sectors are contributing most to your portfolio's growth and identify areas for rebalancing."
-          type="bar"
-          options={{
-            chart: { type: 'bar', toolbar: { show: false } },
-            xaxis: { categories: filteredSectorData.map(s => s.sector) },
-            yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
-            tooltip: {
-              custom: ({ series, seriesIndex, dataPointIndex, w }) => {
-                const sector = filteredSectorData[dataPointIndex];
-                const investment = sectorFilter === 'Overall' ? sector.overallInvestment : sector.currentInvestment;
-                const profit = sectorFilter === 'Overall' ? sector.overallTotalProfit : sector.currentProfit;
-                const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
-                return `
-                  <div class="p-2 bg-white border border-gray-300 rounded shadow">
-                    <div class="font-bold">${sector.sector}</div>
-                    <div>Investment: ${formatCurrency(investment)}</div>
-                    <div>Profit/Loss: ${formatCurrency(profit)}</div>
-                    <div>Profit %: ${profitPct}%</div>
-                    <div>Number of Tickers: ${sector.tickerCount}</div>
-                  </div>
-                `;
-              }
-            },
-            colors: [INVESTMENT_COLOR, ...filteredSectorData.map(s => (sectorFilter === 'Overall' ? s.overallTotalProfit : s.currentProfit) >= 0 ? PROFIT_COLOR : LOSS_COLOR)],
-            plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
-            dataLabels: { enabled: false },
-            grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
-          }}
-          series={[
-            {
-              name: 'Investment',
-              data: filteredSectorData.map(s => sectorFilter === 'Overall' ? s.overallInvestment : s.currentInvestment)
-            },
-            {
-              name: 'Profit/Loss',
-              data: filteredSectorData.map(s => sectorFilter === 'Overall' ? s.overallTotalProfit : s.currentProfit)
-            }
-          ]}
-        />
-
-        {/* Asset Type Filter Selector */}
-        <div className="mb-4">
-          <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
-            <button
-              onClick={() => setAssetTypeFilter('Overall')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                assetTypeFilter === 'Overall'
-                  ? 'bg-white text-purple-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-800'
-              }`}
-            >
-              Overall
-            </button>
-            <button
-              onClick={() => setAssetTypeFilter('Current Investment')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                assetTypeFilter === 'Current Investment'
-                  ? 'bg-white text-purple-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-800'
-              }`}
-            >
-              Current Investment
-            </button>
-          </div>
-        </div>
-
-        {/* Investment and Current Value by Asset Type (Bar Chart) */}
-        <ChartContainer
-          title={`Investment and Current Value by Asset Type (${assetTypeFilter})`}
-          infoText="View your portfolio breakdown by asset type. Understand diversification and current valuations across different investment categories to optimize your asset allocation."
-          type="bar"
-          options={{
-            chart: { type: 'bar', toolbar: { show: false } },
-            xaxis: { categories: filteredAssetTypeData.map(a => a.assetType) },
-            yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
-            tooltip: {
-              custom: ({ series, seriesIndex, dataPointIndex, w }) => {
-                const assetType = filteredAssetTypeData[dataPointIndex];
-                const investment = assetTypeFilter === 'Overall' ? assetType.overallInvestment : assetType.currentInvestment;
-                const currentValue = assetType.currentValue;
-                const profit = currentValue - investment;
-                const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
-                return `
-                  <div class="p-2 bg-white border border-gray-300 rounded shadow">
-                    <div class="font-bold">${assetType.assetType}</div>
-                    <div>Investment: ${formatCurrency(investment)}</div>
-                    <div>Current Value: ${formatCurrency(currentValue)}</div>
-                    <div>Profit/Loss: ${formatCurrency(profit)}</div>
-                    <div>Return %: ${profitPct}%</div>
-                  </div>
-                `;
-              }
-            },
-            colors: [INVESTMENT_COLOR, '#10B981'], // Grey for investment, green for current value
-            plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
-            dataLabels: { enabled: false },
-            grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
-          }}
-          series={[
-            {
-              name: 'Investment',
-              data: filteredAssetTypeData.map(a => assetTypeFilter === 'Overall' ? a.overallInvestment : a.currentInvestment)
-            },
-            {
-              name: 'Current Value',
-              data: filteredAssetTypeData.map(a => a.currentValue)
-            }
-          ]}
-        />
-
-        {/* Broker Filter Selector */}
-        <div className="mb-4">
-          <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
-            <button
-              onClick={() => setBrokerFilter('Overall')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                brokerFilter === 'Overall'
-                  ? 'bg-white text-indigo-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-800'
-              }`}
-            >
-              Overall
-            </button>
-            <button
-              onClick={() => setBrokerFilter('Current Investment')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
-                brokerFilter === 'Current Investment'
-                  ? 'bg-white text-indigo-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-800'
-              }`}
-            >
-              Current Investment
-            </button>
-          </div>
-        </div>
-
-        {/* Investment and Current Value by Broker (Bar Chart) */}
-        <ChartContainer
-          title={`Investment and Current Value by Broker (${brokerFilter})`}
-          infoText="Compare performance across different brokers. See which brokers are handling your most valuable investments and assess their contribution to your portfolio."
-          type="bar"
-          options={{
-            chart: { type: 'bar', toolbar: { show: false } },
-            xaxis: { categories: filteredBrokerData.map(b => b.broker) },
-            yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
-            tooltip: {
-              custom: ({ series, seriesIndex, dataPointIndex, w }) => {
-                const broker = filteredBrokerData[dataPointIndex];
-                const investment = brokerFilter === 'Overall' ? broker.overallInvestment : broker.currentInvestment;
-                const currentValue = broker.currentValue;
-                const profit = currentValue - investment;
-                const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
-                return `
-                  <div class="p-2 bg-white border border-gray-300 rounded shadow">
-                    <div class="font-bold">${broker.broker}</div>
-                    <div>Investment: ${formatCurrency(investment)}</div>
-                    <div>Current Value: ${formatCurrency(currentValue)}</div>
-                    <div>Profit/Loss: ${formatCurrency(profit)}</div>
-                    <div>Return %: ${profitPct}%</div>
-                  </div>
-                `;
-              }
-            },
-            colors: [INVESTMENT_COLOR, '#10B981'], // Grey for investment, green for current value
-            plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
-            dataLabels: { enabled: false },
-            grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
-          }}
-          series={[
-            {
-              name: 'Investment',
-              data: filteredBrokerData.map(b => brokerFilter === 'Overall' ? b.overallInvestment : b.currentInvestment)
-            },
-            {
-              name: 'Current Value',
-              data: filteredBrokerData.map(b => b.currentValue)
-            }
-          ]}
-        />
-      </div>
-
-      {/* Right Column (Side Panel - stacks below charts on mobile) */}
-      <div className="space-y-2 sm:space-y-4">
-        
-        {/* Quick Stats Card */}
-        <div className="bg-white border border-slate-100 rounded-xl p-2 sm:p-3 shadow-lg">
-          <h3 className="text-xs sm:text-sm font-semibold text-slate-700 mb-4">Quick Stats 📊</h3>
-          <ul className="text-xs text-slate-700 space-y-2">
-            <li>
-              Total transactions: <strong>{transactions.length}</strong>
-            </li>
-            <li>
-              Total tickers: <strong>{Object.keys(holdings).length}</strong>
-            </li>
-            <li>
-              Avg investment / tx: <strong>
-                {formatCurrency(
-                  totalInvestment / Math.max(1, transactions.length)
                 )}
-              </strong>
-            </li>
-          </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Stat Cards Section - 2 columns on mobile, 4 columns on medium and larger screens for better spacing */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            <StatCard
+              label="Total Investment"
+              value={formatCurrency(totalInvestment)}
+            />
+            <StatCard
+              label="Current Investment"
+              value={formatCurrency(currentInvestment)}
+            />
+            <StatCard
+              label="Current Value"
+              value={formatCurrency(currentValue)}
+            />
+            <StatCard
+              label="Realized P/L"
+              value={formatCurrency(realizedProfit)}
+              positive={realizedProfit >= 0}
+            />
+            <StatCard
+              label="Unrealized P/L"
+              value={formatCurrency(unrealizedProfit)}
+              positive={unrealizedProfit >= 0}
+            />
+            <StatCard
+              label="Total P/L"
+              value={formatCurrency(totalProfit)}
+              positive={totalProfit >= 0}
+            />
+            <StatCard
+              label="P/L %"
+              value={formatPercentage(profitPercentage)}
+              positive={totalProfit >= 0}
+            />
+          </div>
+          {/* Current Value by Sector (Pie Chart) */}
+          <ChartContainer
+            title="Current Value by Sector"
+            infoText="Visualize your current portfolio allocation by sector. The pie chart shows the percentage distribution of your holdings, helping you assess diversification."
+            height={350}
+            type="pie"
+            options={{
+              labels: bySector.map(s => s.sector),
+              colors: PIE_CHART_COLORS,
+              tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
+              legend: { position: 'bottom' },
+              dataLabels: {
+                enabled: true,
+                formatter: (val) => `${Math.round(val)}%`,
+                style: { fontSize: '14px', fontWeight: 'bold', colors: ['#ffffff'] }
+              }
+            }}
+            series={bySector.map(s => s.currentValue)}
+          />
+
+          {/* Quick Stats Card */}
+          <div className="bg-white border border-slate-100 rounded-xl p-2 sm:p-3 shadow-lg">
+            <h3 className="text-xs sm:text-sm font-semibold text-slate-700 mb-4">Quick Stats 📊</h3>
+            <ul className="text-xs text-slate-700 space-y-2">
+              <li>
+                Total transactions: <strong>{transactions.length}</strong>
+              </li>
+              <li>
+                Total tickers: <strong>{Object.keys(holdings).length}</strong>
+              </li>
+              <li>
+                Avg investment / tx: <strong>
+                  {formatCurrency(
+                    totalInvestment / Math.max(1, transactions.length)
+                  )}
+                </strong>
+              </li>
+            </ul>
+          </div>
+
         </div>
 
-        {/* Current Value by Sector (Pie Chart) */}
-        <ChartContainer
-          title="Current Value by Sector"
-          infoText="Visualize your current portfolio allocation by sector. The pie chart shows the percentage distribution of your holdings, helping you assess diversification."
-          height={350}
-          type="pie"
-          options={{
-            labels: bySector.map(s => s.sector),
-            colors: PIE_CHART_COLORS,
-            tooltip: { y: { formatter: (v) => formatAbbreviated(v) } },
-            legend: { position: 'bottom' },
-            dataLabels: {
-              enabled: true,
-              formatter: (val) => `${Math.round(val)}%`,
-              style: { fontSize: '14px', fontWeight: 'bold', colors: ['#ffffff'] }
-            }
-          }}
-          series={bySector.map(s => s.currentValue)}
-        />
+        {/* Graphs Section (3 parts) */}
+        <div className="md:col-span-3 space-y-2 sm:space-y-4">
+
+          {/* Time Range Selector */}
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-slate-700 mb-2">Time Range</label>
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="w-full sm:w-auto px-3 py-1 text-xs border border-slate-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+            >
+              <option value="30d">Last 30 Days</option>
+              <option value="3m">Last 3 Months</option>
+              <option value="1y">Last 1 Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+
+          {/* Portfolio Value Over Time (Line Chart) */}
+          <ChartContainer
+            title="Portfolio Value Over Time"
+            infoText="Track how your portfolio value has changed over time. Use the time range selector above to focus on specific periods and identify growth trends."
+            type="line"
+            options={{
+              chart: { type: 'line', toolbar: { show: false } },
+              xaxis: { type: 'datetime' },
+              yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
+              tooltip: { y: { formatter: (v) => formatCurrency(v) } },
+              colors: [LINE_COLOR],
+              stroke: { curve: 'smooth', width: 3 },
+              markers: { size: 0 },
+              grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
+            }}
+            series={[
+              { name: 'Portfolio Value', data: filteredByDate.map(d => [d.timestamp, d.value]) }
+            ]}
+          />
+
+          {/* Company Filter Selector */}
+          <div className="mb-4">
+            <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+              <button
+                onClick={() => setCompanyFilter('Overall')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  companyFilter === 'Overall'
+                    ? 'bg-white text-green-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Overall
+              </button>
+              <button
+                onClick={() => setCompanyFilter('Current Investment')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  companyFilter === 'Current Investment'
+                    ? 'bg-white text-green-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Current Investment
+              </button>
+            </div>
+          </div>
+
+          {/* Investment and Profit by Company (Bar Chart) */}
+          <ChartContainer
+            title={`Investment and Profit by Company (${companyFilter})`}
+            infoText="Compare investments and profits across different companies. Switch between Overall and Current Investment views using the filter above to see different perspectives on your holdings."
+            type="bar"
+            options={{
+              chart: { type: 'bar', toolbar: { show: false } },
+              xaxis: { categories: filteredCompanyData.map(c => c.ticker) },
+              yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
+              tooltip: {
+                custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                  const company = filteredCompanyData[dataPointIndex];
+                  const investment = companyFilter === 'Overall' ? company.overallInvestment : company.currentInvestment;
+                  const profit = companyFilter === 'Overall' ? company.overallTotalProfit : company.currentProfit;
+                  const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
+                  return `
+                    <div class="p-2 bg-white border border-gray-300 rounded shadow">
+                      <div class="font-bold">${company.ticker}</div>
+                      <div>Investment: ${formatCurrency(investment)}</div>
+                      <div>Profit/Loss: ${formatCurrency(profit)}</div>
+                      <div>Profit %: ${profitPct}%</div>
+                      <div>Remaining Shares: ${company.remainingQty.toFixed(2)}</div>
+                    </div>
+                  `;
+                }
+              },
+              colors: [INVESTMENT_COLOR, ...filteredCompanyData.map(c => (companyFilter === 'Overall' ? c.overallTotalProfit : c.currentProfit) >= 0 ? PROFIT_COLOR : LOSS_COLOR)],
+              plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+              dataLabels: { enabled: false },
+              grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
+            }}
+            series={[
+              {
+                name: 'Investment',
+                data: filteredCompanyData.map(c => companyFilter === 'Overall' ? c.overallInvestment : c.currentInvestment)
+              },
+              {
+                name: 'Profit/Loss',
+                data: filteredCompanyData.map(c => companyFilter === 'Overall' ? c.overallTotalProfit : c.currentProfit)
+              }
+            ]}
+          />
+
+          {/* Sector Filter Selector */}
+          <div className="mb-4">
+            <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+              <button
+                onClick={() => setSectorFilter('Overall')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  sectorFilter === 'Overall'
+                    ? 'bg-white text-blue-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Overall
+              </button>
+              <button
+                onClick={() => setSectorFilter('Current Investment')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  sectorFilter === 'Current Investment'
+                    ? 'bg-white text-blue-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Current Investment
+              </button>
+            </div>
+          </div>
+
+          {/* Investment and Profit by Sector (Bar Chart) */}
+          <ChartContainer
+            title={`Investment and Profit by Sector (${sectorFilter})`}
+            infoText="Analyze performance by sector allocation. See which sectors are contributing most to your portfolio's growth and identify areas for rebalancing."
+            type="bar"
+            options={{
+              chart: { type: 'bar', toolbar: { show: false } },
+              xaxis: { categories: filteredSectorData.map(s => s.sector) },
+              yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
+              tooltip: {
+                custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                  const sector = filteredSectorData[dataPointIndex];
+                  const investment = sectorFilter === 'Overall' ? sector.overallInvestment : sector.currentInvestment;
+                  const profit = sectorFilter === 'Overall' ? sector.overallTotalProfit : sector.currentProfit;
+                  const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
+                  return `
+                    <div class="p-2 bg-white border border-gray-300 rounded shadow">
+                      <div class="font-bold">${sector.sector}</div>
+                      <div>Investment: ${formatCurrency(investment)}</div>
+                      <div>Profit/Loss: ${formatCurrency(profit)}</div>
+                      <div>Profit %: ${profitPct}%</div>
+                      <div>Number of Tickers: ${sector.tickerCount}</div>
+                    </div>
+                  `;
+                }
+              },
+              colors: [INVESTMENT_COLOR, ...filteredSectorData.map(s => (sectorFilter === 'Overall' ? s.overallTotalProfit : s.currentProfit) >= 0 ? PROFIT_COLOR : LOSS_COLOR)],
+              plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+              dataLabels: { enabled: false },
+              grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
+            }}
+            series={[
+              {
+                name: 'Investment',
+                data: filteredSectorData.map(s => sectorFilter === 'Overall' ? s.overallInvestment : s.currentInvestment)
+              },
+              {
+                name: 'Profit/Loss',
+                data: filteredSectorData.map(s => sectorFilter === 'Overall' ? s.overallTotalProfit : s.currentProfit)
+              }
+            ]}
+          />
+
+          {/* Asset Type Filter Selector */}
+          <div className="mb-4">
+            <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+              <button
+                onClick={() => setAssetTypeFilter('Overall')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  assetTypeFilter === 'Overall'
+                    ? 'bg-white text-purple-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Overall
+              </button>
+              <button
+                onClick={() => setAssetTypeFilter('Current Investment')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  assetTypeFilter === 'Current Investment'
+                    ? 'bg-white text-purple-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Current Investment
+              </button>
+            </div>
+          </div>
+
+          {/* Investment and Current Value by Asset Type (Bar Chart) */}
+          <ChartContainer
+            title={`Investment and Current Value by Asset Type (${assetTypeFilter})`}
+            infoText="View your portfolio breakdown by asset type. Understand diversification and current valuations across different investment categories to optimize your asset allocation."
+            type="bar"
+            options={{
+              chart: { type: 'bar', toolbar: { show: false } },
+              xaxis: { categories: filteredAssetTypeData.map(a => a.assetType) },
+              yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
+              tooltip: {
+                custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                  const assetType = filteredAssetTypeData[dataPointIndex];
+                  const investment = assetTypeFilter === 'Overall' ? assetType.overallInvestment : assetType.currentInvestment;
+                  const currentValue = assetType.currentValue;
+                  const profit = currentValue - investment;
+                  const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
+                  return `
+                    <div class="p-2 bg-white border border-gray-300 rounded shadow">
+                      <div class="font-bold">${assetType.assetType}</div>
+                      <div>Investment: ${formatCurrency(investment)}</div>
+                      <div>Current Value: ${formatCurrency(currentValue)}</div>
+                      <div>Profit/Loss: ${formatCurrency(profit)}</div>
+                      <div>Return %: ${profitPct}%</div>
+                    </div>
+                  `;
+                }
+              },
+              colors: [INVESTMENT_COLOR, '#10B981'], // Grey for investment, green for current value
+              plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+              dataLabels: { enabled: false },
+              grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
+            }}
+            series={[
+              {
+                name: 'Investment',
+                data: filteredAssetTypeData.map(a => assetTypeFilter === 'Overall' ? a.overallInvestment : a.currentInvestment)
+              },
+              {
+                name: 'Current Value',
+                data: filteredAssetTypeData.map(a => a.currentValue)
+              }
+            ]}
+          />
+
+          {/* Broker Filter Selector */}
+          <div className="mb-4">
+            <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+              <button
+                onClick={() => setBrokerFilter('Overall')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  brokerFilter === 'Overall'
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Overall
+              </button>
+              <button
+                onClick={() => setBrokerFilter('Current Investment')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
+                  brokerFilter === 'Current Investment'
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Current Investment
+              </button>
+            </div>
+          </div>
+
+          {/* Investment and Current Value by Broker (Bar Chart) */}
+          <ChartContainer
+            title={`Investment and Current Value by Broker (${brokerFilter})`}
+            infoText="Compare performance across different brokers. See which brokers are handling your most valuable investments and assess their contribution to your portfolio."
+            type="bar"
+            options={{
+              chart: { type: 'bar', toolbar: { show: false } },
+              xaxis: { categories: filteredBrokerData.map(b => b.broker) },
+              yaxis: { labels: { formatter: (v) => formatAbbreviated(v) } },
+              tooltip: {
+                custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                  const broker = filteredBrokerData[dataPointIndex];
+                  const investment = brokerFilter === 'Overall' ? broker.overallInvestment : broker.currentInvestment;
+                  const currentValue = broker.currentValue;
+                  const profit = currentValue - investment;
+                  const profitPct = investment > 0 ? (profit / investment * 100).toFixed(2) : 0;
+                  return `
+                    <div class="p-2 bg-white border border-gray-300 rounded shadow">
+                      <div class="font-bold">${broker.broker}</div>
+                      <div>Investment: ${formatCurrency(investment)}</div>
+                      <div>Current Value: ${formatCurrency(currentValue)}</div>
+                      <div>Profit/Loss: ${formatCurrency(profit)}</div>
+                      <div>Return %: ${profitPct}%</div>
+                    </div>
+                  `;
+                }
+              },
+              colors: [INVESTMENT_COLOR, '#10B981'], // Grey for investment, green for current value
+              plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+              dataLabels: { enabled: false },
+              grid: { borderColor: '#e0e0e0', strokeDashArray: 5 }
+            }}
+            series={[
+              {
+                name: 'Investment',
+                data: filteredBrokerData.map(b => brokerFilter === 'Overall' ? b.overallInvestment : b.currentInvestment)
+              },
+              {
+                name: 'Current Value',
+                data: filteredBrokerData.map(b => b.currentValue)
+              }
+            ]}
+          />
+
+
+        </div>
 
       </div>
+
     </div>
   );
 }
@@ -1163,7 +1168,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
 
 export default function Analytics({ analytics, transactions, tickerPrices, portfolioData, profitData, loading }) {
   return (
-    <div className="font-sans p-4 sm:p-0">
+    <div className="font-sans p-0">
       {loading && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50">
           <div className="loader">
