@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 
 export default function Transactions({ transactions, setTransactions, tickers }){
-  const [form, setForm] = useState({ date: "", ticker: "", company: "", assetType: "", sector: "", qty: 0, price: 0, broker: "", type: "" });
+  const [form, setForm] = useState({ date: "", ticker: "", company: "", assetType: "", sector: "", qty: "", price: "", broker: "", type: "" });
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -95,7 +95,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
       const tx = await res.json();
       console.log('Received transactions:', tx.data);
       setTransactions(tx.data || []);
-      setForm({date:"",ticker:"",company:"",assetType:"",qty:0,price:0,broker:""});
+      setForm({date:"",ticker:"",company:"",assetType:"",qty:"",price:"",broker:""});
     } catch (err) {
       console.error(err);
       alert("Failed to save");
@@ -108,7 +108,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
     console.log('Editing transaction:', t);
     setEditingId(t.id);
     setIsEditing(true);
-    setForm({ date: t.date.split('T')[0], ticker: t.ticker, company: t.company, assetType: t['Asset Type'] || "", sector: t.sector || "", qty: t.qty, price: t.price, broker: t.broker, type: t['type'] || "" });
+    setForm({ date: t.date.split('T')[0], ticker: t.ticker, company: t.company, assetType: t['Asset Type'] || "", sector: t.sector || "", qty: t.qty.toString(), price: t.price.toString(), broker: t.broker, type: t['type'] || "" });
     setShowModal(true);
   }
 
@@ -129,14 +129,14 @@ export default function Transactions({ transactions, setTransactions, tickers })
   function handleCancel() {
     setIsEditing(false);
     setEditingId(null);
-    setForm({date:"",ticker:"",company:"",assetType:"",sector:"",qty:0,price:0,broker:"",type:""});
+    setForm({date:"",ticker:"",company:"",assetType:"",sector:"",qty:"",price:"",broker:"",type:""});
     setShowModal(false);
   }
 
   function handleAdd() {
     setIsEditing(false);
     setEditingId(null);
-    setForm({date:"",ticker:"",company:"",assetType:"",sector:"",qty:0,price:0,broker:"",type:""});
+    setForm({date:"",ticker:"",company:"",assetType:"",sector:"",qty:"",price:"",broker:"",type:""});
     setShowModal(false);
     setShowModal(true);
   }
@@ -305,28 +305,24 @@ export default function Transactions({ transactions, setTransactions, tickers })
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Company</label>
-                    <input placeholder="e.g., Apple Inc." value={form.company} className="w-full p-3 border border-slate-300 rounded-lg bg-slate-100" readOnly />
+                {form.ticker && (
+                  <div className="bg-slate-50 p-4 rounded-lg">
+                    <h4 className="text-sm font-medium text-slate-700 mb-2">Ticker Information</h4>
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      <div><strong>Company:</strong> {form.company || 'N/A'}</div>
+                      <div><strong>Asset Type:</strong> {form.assetType || 'N/A'}</div>
+                      <div><strong>Sector:</strong> {form.sector || 'N/A'}</div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Asset Type</label>
-                    <input placeholder="e.g., Equity" value={form.assetType} className="w-full p-3 border border-slate-300 rounded-lg bg-slate-100" readOnly />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Sector</label>
-                  <input placeholder="e.g., Technology" value={form.sector} className="w-full p-3 border border-slate-300 rounded-lg bg-slate-100" readOnly />
-                </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
-                    <input required type="number" placeholder="e.g., 100" value={form.qty} onChange={e=>setForm({...form,qty:parseInt(e.target.value||0)})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                    <input required type="number" placeholder="e.g., 100" value={form.qty} onChange={e=>setForm({...form,qty:e.target.value})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Price (₹)</label>
-                    <input required type="number" step="0.01" placeholder="e.g., 150.50" value={form.price} onChange={e=>setForm({...form,price:parseFloat(e.target.value||0)})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                    <input required type="number" step="0.01" placeholder="e.g., 150.50" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
                   </div>
                 </div>
                 <div>
