@@ -392,25 +392,49 @@ const calculateBrokerMetrics = (companyData = []) => {
 // --- Components ---
 
 /**
- * Renders a single statistic card.
- * Enhanced for mobile readability and visual appeal.
+ * Renders a single statistic card with icons and enhanced styling.
  * @param {Object} props
  * @param {string} props.label
  * @param {string} props.value
  * @param {boolean} [props.positive=true] - Used to determine text color for profit/loss
+ * @param {string} [props.icon] - Icon SVG as string
  * @returns {JSX.Element}
  */
-function StatCard({ label, value, positive = true }) {
-  // Use explicit color for positive and negative profit/loss
-  const valueColor = positive === false ? 'text-rose-600' : 'text-emerald-600';
+function StatCard({ label, value, positive = true, icon }) {
+  const valueColor = positive === false ? 'text-red-500' : 'text-green-600';
+  const bgGradient = positive === false ? 'from-red-50 to-red-100' : 'from-green-50 to-green-100';
+
+  const getIcon = (label) => {
+    if (label.includes('Investment')) return (
+      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+      </svg>
+    );
+    if (label.includes('Value')) return (
+      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    );
+    if (label.includes('P/L')) return (
+      <svg className={`w-6 h-6 ${valueColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={positive ? "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" : "M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"} />
+      </svg>
+    );
+    return (
+      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    );
+  };
 
   return (
-    // Mobile: p-3, Desktop: p-4. Uses transition and shadow for polish.
-    <div className="p-3 sm:p-4 rounded-lg border border-slate-200 bg-white shadow-md transition duration-300 ease-in-out hover:shadow-lg">
-      <div className="text-xs sm:text-sm text-slate-500 font-medium">{label}</div>
-      {/* Font size is slightly larger on desktop for prominence */}
+    <div className={`p-4 sm:p-6 rounded-xl bg-gradient-to-br ${bgGradient} border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-sm sm:text-base text-slate-600 font-medium">{label}</div>
+        {getIcon(label)}
+      </div>
       <div
-        className={`text-lg sm:text-xl font-bold mt-1 ${
+        className={`text-xl sm:text-2xl font-bold ${
           label.includes('P/L') ? valueColor : 'text-slate-900'
         }`}
       >
@@ -421,7 +445,7 @@ function StatCard({ label, value, positive = true }) {
 }
 
 /**
- * A wrapper component for all ApexCharts charts to ensure consistent styling.
+ * A wrapper component for all ApexCharts charts with modern styling and animations.
  * @param {Object} props
  * @param {string} props.title
  * @param {number} [props.height=220]
@@ -431,8 +455,11 @@ function StatCard({ label, value, positive = true }) {
  * @returns {JSX.Element}
  */
 const ChartContainer = ({ title, height = 220, options, series, type }) => (
-  <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-6 shadow-lg">
-    <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-4">{title}</h3>
+  <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-[1.02] animate-fade-in">
+    <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 flex items-center">
+      <span className="mr-2">📊</span>
+      {title}
+    </h3>
     <div style={{ height, minHeight: height }} className="w-full">
       <ReactApexChart
         options={options}
@@ -456,6 +483,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
   const [sectorFilter, setSectorFilter] = useState('Overall');
   const [assetTypeFilter, setAssetTypeFilter] = useState('Overall');
   const [brokerFilter, setBrokerFilter] = useState('Overall');
+  const [darkMode, setDarkMode] = useState(false);
 
   // Use useMemo for aggregation performance
   const byDate = useMemo(
@@ -627,13 +655,91 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
   }, [byDate, timeRange]);
 
 
+  // Calculate top performer
+  const topCompany = filteredCompanyData.length > 0 ? filteredCompanyData.reduce((prev, current) =>
+    (companyFilter === 'Overall' ? current.overallTotalProfit : current.currentProfit) >
+    (companyFilter === 'Overall' ? prev.overallTotalProfit : prev.currentProfit) ? current : prev
+  ) : null;
+
   return (
     // Main layout is fully responsive: single column on mobile, 2/3 + 1/3 split on desktop
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 font-sans">
-      
+
+      {/* Summary Header */}
+      <div className="md:col-span-3 mb-8">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 sm:p-8 text-white shadow-lg relative">
+          <div className="absolute top-4 right-4 flex space-x-2">
+            <button
+              onClick={() => {
+                const csv = [
+                  ['Ticker', 'Investment', 'Current Value', 'Profit/Loss', 'Remaining Qty'],
+                  ...filteredCompanyData.map(c => [
+                    c.ticker,
+                    companyFilter === 'Overall' ? c.overallInvestment : c.currentInvestment,
+                    c.currentValue,
+                    companyFilter === 'Overall' ? c.overallTotalProfit : c.currentProfit,
+                    c.remainingQty
+                  ])
+                ].map(row => row.join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'portfolio-data.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition duration-200"
+              title="Export Data as CSV"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition duration-200"
+              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {darkMode ? (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                </svg>
+              )}
+            </button>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4">Portfolio Analytics Dashboard</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <p className="text-blue-100 text-sm">Total Portfolio Value</p>
+              <p className="text-2xl font-bold">{formatCurrency(currentValue)}</p>
+            </div>
+            <div>
+              <p className="text-blue-100 text-sm">Total P/L</p>
+              <p className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                {formatCurrency(totalProfit)} ({formatPercentage(profitPercentage)})
+              </p>
+            </div>
+            {topCompany && (
+              <div>
+                <p className="text-blue-100 text-sm">Top Performer</p>
+                <p className="text-xl font-bold">{topCompany.ticker}</p>
+                <p className="text-sm text-blue-100">
+                  {formatCurrency(companyFilter === 'Overall' ? topCompany.overallTotalProfit : topCompany.currentProfit)} profit
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Left Column (Charts - takes up full width on mobile) */}
       <div className="md:col-span-2 space-y-4 sm:space-y-6">
-        
+
         {/* Stat Cards Section - 2 columns on mobile, 4 columns on medium and larger screens for better spacing */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           <StatCard
@@ -671,31 +777,18 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         </div>
 
         {/* Time Range Selector */}
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <button
-            onClick={() => setTimeRange('30d')}
-            className={`px-3 py-1 rounded text-sm ${timeRange === '30d' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">Time Range</label>
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
           >
-            Last 30 Days
-          </button>
-          <button
-            onClick={() => setTimeRange('3m')}
-            className={`px-3 py-1 rounded text-sm ${timeRange === '3m' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            Last 3 Months
-          </button>
-          <button
-            onClick={() => setTimeRange('1y')}
-            className={`px-3 py-1 rounded text-sm ${timeRange === '1y' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            Last 1 Year
-          </button>
-          <button
-            onClick={() => setTimeRange('all')}
-            className={`px-3 py-1 rounded text-sm ${timeRange === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            All Time
-          </button>
+            <option value="30d">Last 30 Days</option>
+            <option value="3m">Last 3 Months</option>
+            <option value="1y">Last 1 Year</option>
+            <option value="all">All Time</option>
+          </select>
         </div>
 
         {/* Portfolio Value Over Time (Line Chart) */}
@@ -718,19 +811,29 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         />
 
         {/* Company Filter Selector */}
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <button
-            onClick={() => setCompanyFilter('Overall')}
-            className={`px-3 py-1 rounded text-sm ${companyFilter === 'Overall' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            Overall
-          </button>
-          <button
-            onClick={() => setCompanyFilter('Current Investment')}
-            className={`px-3 py-1 rounded text-sm ${companyFilter === 'Current Investment' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            Current Investment
-          </button>
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+            <button
+              onClick={() => setCompanyFilter('Overall')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                companyFilter === 'Overall'
+                  ? 'bg-white text-green-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              Overall
+            </button>
+            <button
+              onClick={() => setCompanyFilter('Current Investment')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                companyFilter === 'Current Investment'
+                  ? 'bg-white text-green-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              Current Investment
+            </button>
+          </div>
         </div>
 
         {/* Investment and Profit by Company (Bar Chart) */}
@@ -776,19 +879,29 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         />
 
         {/* Sector Filter Selector */}
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <button
-            onClick={() => setSectorFilter('Overall')}
-            className={`px-3 py-1 rounded text-sm ${sectorFilter === 'Overall' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            Overall
-          </button>
-          <button
-            onClick={() => setSectorFilter('Current Investment')}
-            className={`px-3 py-1 rounded text-sm ${sectorFilter === 'Current Investment' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            Current Investment
-          </button>
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+            <button
+              onClick={() => setSectorFilter('Overall')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                sectorFilter === 'Overall'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              Overall
+            </button>
+            <button
+              onClick={() => setSectorFilter('Current Investment')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                sectorFilter === 'Current Investment'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              Current Investment
+            </button>
+          </div>
         </div>
 
         {/* Investment and Profit by Sector (Bar Chart) */}
@@ -834,19 +947,29 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         />
 
         {/* Asset Type Filter Selector */}
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <button
-            onClick={() => setAssetTypeFilter('Overall')}
-            className={`px-3 py-1 rounded text-sm ${assetTypeFilter === 'Overall' ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            Overall
-          </button>
-          <button
-            onClick={() => setAssetTypeFilter('Current Investment')}
-            className={`px-3 py-1 rounded text-sm ${assetTypeFilter === 'Current Investment' ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            Current Investment
-          </button>
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+            <button
+              onClick={() => setAssetTypeFilter('Overall')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                assetTypeFilter === 'Overall'
+                  ? 'bg-white text-purple-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              Overall
+            </button>
+            <button
+              onClick={() => setAssetTypeFilter('Current Investment')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                assetTypeFilter === 'Current Investment'
+                  ? 'bg-white text-purple-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              Current Investment
+            </button>
+          </div>
         </div>
 
         {/* Investment and Current Value by Asset Type (Bar Chart) */}
@@ -893,19 +1016,29 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         />
 
         {/* Broker Filter Selector */}
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <button
-            onClick={() => setBrokerFilter('Overall')}
-            className={`px-3 py-1 rounded text-sm ${brokerFilter === 'Overall' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            Overall
-          </button>
-          <button
-            onClick={() => setBrokerFilter('Current Investment')}
-            className={`px-3 py-1 rounded text-sm ${brokerFilter === 'Current Investment' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-          >
-            Current Investment
-          </button>
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+            <button
+              onClick={() => setBrokerFilter('Overall')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                brokerFilter === 'Overall'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              Overall
+            </button>
+            <button
+              onClick={() => setBrokerFilter('Current Investment')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                brokerFilter === 'Current Investment'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              Current Investment
+            </button>
+          </div>
         </div>
 
         {/* Investment and Current Value by Broker (Bar Chart) */}
