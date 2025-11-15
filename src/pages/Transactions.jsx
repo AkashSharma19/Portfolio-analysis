@@ -39,6 +39,14 @@ export default function Transactions({ transactions, setTransactions, tickers })
   const totalPages = Math.ceil(filteredAndSortedTransactions.length / itemsPerPage);
   const paginatedTransactions = filteredAndSortedTransactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const uniqueBrokers = useMemo(() => {
+    const brokers = new Set();
+    transactions.forEach(t => {
+      if (t.broker) brokers.add(t.broker);
+    });
+    return Array.from(brokers).sort();
+  }, [transactions]);
+
   const handleSort = (column) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -319,7 +327,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Broker</label>
-                  <input placeholder="e.g., Zerodha" value={form.broker} onChange={e=>setForm({...form,broker:e.target.value})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                  <input list="brokers" placeholder="e.g., Zerodha" value={form.broker} onChange={e=>setForm({...form,broker:e.target.value})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
@@ -335,6 +343,9 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 <button type="button" onClick={handleCancel} className="flex-1 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors duration-200 font-medium">Cancel</button>
               </div>
             </form>
+            <datalist id="brokers">
+              {uniqueBrokers.map(broker => <option key={broker} value={broker} />)}
+            </datalist>
           </div>
         </div>
       )}
