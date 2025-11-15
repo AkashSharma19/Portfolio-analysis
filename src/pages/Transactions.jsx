@@ -165,8 +165,8 @@ export default function Transactions({ transactions, setTransactions, tickers })
         </div>
       )}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold text-slate-800">Transactions</h2>
-        <button onClick={handleAdd} className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium">Add Transaction</button>
+        <h2 className="text-xl sm:text-2xl font-semibold text-slate-800">Transactions</h2>
+        <button onClick={handleAdd} className="px-4 py-2 sm:px-6 sm:py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium">Add Transaction</button>
       </div>
 
       <div className="mb-4">
@@ -175,7 +175,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
           placeholder="Search by ticker, company, or broker..."
           value={searchTerm}
           onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-          className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full p-2 sm:p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
       </div>
 
@@ -237,11 +237,11 @@ export default function Transactions({ transactions, setTransactions, tickers })
       {/* Mobile Cards */}
       <div className="md:hidden space-y-4">
         {paginatedTransactions.map(t => (
-          <div key={t.id} className={`bg-white p-4 rounded-lg shadow-md border-l-4 ${t['type'] === 'BUY' ? 'border-green-500' : 'border-red-500'}`}>
+          <div key={t.id} className={`bg-white p-3 rounded-lg shadow-md border-l-4 ${t['type'] === 'BUY' ? 'border-green-500' : 'border-red-500'}`}>
             <div className="flex justify-between items-start mb-2">
               <div>
-                <h3 className="font-semibold text-slate-900">{t.ticker}</h3>
-                <p className="text-sm text-slate-600">{t.company}</p>
+                <h3 className="text-sm font-semibold text-slate-900">{t.ticker}</h3>
+                <p className="text-xs text-slate-600">{t.company}</p>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => handleEdit(t)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded" title="Edit">
@@ -252,7 +252,7 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <div><span className="font-medium">Date:</span> {new Date(t.date).toLocaleDateString()}</div>
               <div><span className="font-medium">Qty:</span> {t.qty}</div>
               <div><span className="font-medium">Price:</span> ₹{t.price}</div>
@@ -280,17 +280,17 @@ export default function Transactions({ transactions, setTransactions, tickers })
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">{isEditing ? "Edit Transaction" : "Add Transaction"}</h3>
+          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h3 className="text-base font-semibold text-slate-800 mb-4">{isEditing ? "Edit Transaction" : "Add Transaction"}</h3>
             <form onSubmit={submit}>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
-                    <input required type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Date</label>
+                    <input required type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} className="w-full p-2 sm:p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Ticker</label>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Ticker</label>
                     <input
                       list="tickers"
                       value={form.ticker}
@@ -300,15 +300,15 @@ export default function Transactions({ transactions, setTransactions, tickers })
                         setForm({...form, ticker: selectedTicker, company: selected ? selected['Company Name'] : '', assetType: selected ? selected['Asset Type'] : '', sector: selected ? selected['Sector'] : ''});
                       }}
                       placeholder="Search and select ticker..."
-                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full p-2 sm:p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       required
                     />
                   </div>
                 </div>
                 {form.ticker && (
                   <div className="bg-slate-50 p-4 rounded-lg">
-                    <h4 className="text-sm font-medium text-slate-700 mb-2">Ticker Information</h4>
-                    <div className="grid grid-cols-1 gap-2 text-sm">
+                    <h4 className="text-xs font-medium text-slate-700 mb-2">Ticker Information</h4>
+                    <div className="grid grid-cols-1 gap-2 text-xs">
                       <div><strong>Company:</strong> {form.company || 'N/A'}</div>
                       <div><strong>Asset Type:</strong> {form.assetType || 'N/A'}</div>
                       <div><strong>Sector:</strong> {form.sector || 'N/A'}</div>
@@ -317,21 +317,21 @@ export default function Transactions({ transactions, setTransactions, tickers })
                 )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
-                    <input required type="number" placeholder="e.g., 100" value={form.qty} onChange={e=>setForm({...form,qty:e.target.value})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Quantity</label>
+                    <input required type="number" placeholder="e.g., 100" value={form.qty} onChange={e=>setForm({...form,qty:e.target.value})} className="w-full p-2 sm:p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Price (₹)</label>
-                    <input required type="number" step="0.01" placeholder="e.g., 150.50" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Price (₹)</label>
+                    <input required type="number" step="0.01" placeholder="e.g., 150.50" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} className="w-full p-2 sm:p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Broker</label>
-                  <input list="brokers" placeholder="e.g., Zerodha" value={form.broker} onChange={e=>setForm({...form,broker:e.target.value})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Broker</label>
+                  <input list="brokers" placeholder="e.g., Zerodha" value={form.broker} onChange={e=>setForm({...form,broker:e.target.value})} className="w-full p-2 sm:p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
-                  <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Type</label>
+                  <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full p-2 sm:p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
                     <option value="">Select Type</option>
                     <option value="BUY">BUY</option>
                     <option value="SELL">SELL</option>

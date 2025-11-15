@@ -428,13 +428,13 @@ function StatCard({ label, value, positive = true, icon }) {
   };
 
   return (
-    <div className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${bgGradient} border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1`}>
+    <div className={`p-3 sm:p-4 rounded-xl bg-gradient-to-br ${bgGradient} border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1`}>
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs text-slate-600 font-medium">{label}</div>
         {getIcon(label)}
       </div>
       <div
-        className={`text-base sm:text-lg font-bold ${
+        className={`text-sm sm:text-base font-bold ${
           label.includes('P/L') ? valueColor : 'text-slate-900'
         }`}
       >
@@ -480,8 +480,8 @@ const ChartContainer = ({ title, infoText, height = 300, options, series, type }
     : series && series.length > 0 && series[0] && series[0].data && series[0].data.length > 0;
 
   return (
-    <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl p-2 sm:p-4 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-[1.02] animate-fade-in">
-      <h3 className="text-sm sm:text-base font-bold text-slate-800 mb-4 flex items-center">
+    <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl p-3 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-[1.02] animate-fade-in">
+      <h3 className="text-xs sm:text-sm font-bold text-slate-800 mb-4 flex items-center">
         <span className="mr-2">📊</span>
         {title}
         {infoText && (
@@ -701,14 +701,14 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
   return (
     <div className="font-sans">
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 sm:gap-8">
 
         {/* Highlights Section (2 parts) */}
-        <div className="md:col-span-2 space-y-2 sm:space-y-4">
+        <div className="md:col-span-2 space-y-4 sm:space-y-6">
 
           {/* Summary Header */}
           <div className="mb-6">
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 sm:p-8 text-white shadow-lg relative">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 sm:p-10 text-white shadow-lg relative">
               <div className="absolute top-4 right-4 flex space-x-2">
                 <button
                   onClick={() => {
@@ -725,7 +725,6 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
                     const blob = new Blob([csv], { type: 'text/csv' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url;
                     a.download = 'portfolio-data.csv';
                     a.click();
                     URL.revokeObjectURL(url);
@@ -738,22 +737,22 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
                   </svg>
                 </button>
               </div>
-              <h2 className="text-lg sm:text-xl font-bold mb-4">Portfolio Analytics Dashboard</h2>
+              <h2 className="text-base sm:text-lg font-bold mb-4">Portfolio Analytics Dashboard</h2>
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <p className="text-blue-100 text-xs">Total Portfolio Value</p>
-                  <p className="text-lg font-bold">{formatCurrency(currentValue)}</p>
+                  <p className="text-base sm:text-lg font-bold">{formatCurrency(currentValue)}</p>
                 </div>
                 <div>
                   <p className="text-blue-100 text-xs">Total P/L</p>
-                  <p className={`text-lg font-bold ${totalProfit >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                  <p className={`text-base sm:text-lg font-bold ${totalProfit >= 0 ? 'text-green-300' : 'text-red-300'}`}>
                     {formatCurrency(totalProfit)} ({formatPercentage(profitPercentage)})
                   </p>
                 </div>
                 {topCompany && (
                   <div>
                     <p className="text-blue-100 text-xs">Top Performer</p>
-                    <p className="text-base font-bold">{topCompany.ticker}</p>
+                    <p className="text-sm sm:text-base font-bold">{topCompany.ticker}</p>
                     <p className="text-xs text-blue-100">
                       {formatCurrency(companyFilter === 'Overall' ? topCompany.overallTotalProfit : topCompany.currentProfit)} profit
                     </p>
@@ -764,7 +763,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           </div>
 
           {/* Stat Cards Section - 2 columns on mobile, 4 columns on medium and larger screens for better spacing */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 gap-4 sm:gap-6">
             <StatCard
               label="Total Investment"
               value={formatCurrency(totalInvestment)}
@@ -819,8 +818,8 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
           />
 
           {/* Quick Stats Card */}
-          <div className="bg-white border border-slate-100 rounded-xl p-2 sm:p-3 shadow-lg">
-            <h3 className="text-xs sm:text-sm font-semibold text-slate-700 mb-4">Quick Stats 📊</h3>
+          <div className="bg-white border border-slate-100 rounded-xl p-3 sm:p-4 shadow-lg">
+            <h3 className="text-xs font-semibold text-slate-700 mb-4">Quick Stats 📊</h3>
             <ul className="text-xs text-slate-700 space-y-2">
               <li>
                 Total transactions: <strong>{transactions.length}</strong>
@@ -841,7 +840,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         </div>
 
         {/* Graphs Section (3 parts) */}
-        <div className="md:col-span-3 space-y-2 sm:space-y-4">
+        <div className="md:col-span-3 space-y-4 sm:space-y-6">
 
           {/* Time Range Selector */}
           <div className="mb-4">
@@ -1168,7 +1167,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
 
 export default function Analytics({ analytics, transactions, tickerPrices, portfolioData, profitData, loading }) {
   return (
-    <div className="font-sans p-0">
+    <div className="font-sans p-2 sm:p-4">
       {loading && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50">
           <div className="loader">
