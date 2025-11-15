@@ -428,13 +428,13 @@ function StatCard({ label, value, positive = true, icon }) {
   };
 
   return (
-    <div className={`p-4 sm:p-6 rounded-xl bg-gradient-to-br ${bgGradient} border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1`}>
+    <div className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${bgGradient} border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1`}>
       <div className="flex items-center justify-between mb-2">
-        <div className="text-sm sm:text-base text-slate-600 font-medium">{label}</div>
+        <div className="text-xs text-slate-600 font-medium">{label}</div>
         {getIcon(label)}
       </div>
       <div
-        className={`text-xl sm:text-2xl font-bold ${
+        className={`text-base sm:text-lg font-bold ${
           label.includes('P/L') ? valueColor : 'text-slate-900'
         }`}
       >
@@ -473,15 +473,15 @@ const NoDataSVG = () => (
  * @param {string} props.type
  * @returns {JSX.Element}
  */
-const ChartContainer = ({ title, infoText, height = 220, options, series, type }) => {
+const ChartContainer = ({ title, infoText, height = 300, options, series, type }) => {
   // Check if there's data to display
   const hasData = type === 'pie'
     ? series && series.length > 0
     : series && series.length > 0 && series[0] && series[0].data && series[0].data.length > 0;
 
   return (
-    <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-[1.02] animate-fade-in">
-      <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 flex items-center">
+    <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl p-2 sm:p-4 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-[1.02] animate-fade-in">
+      <h3 className="text-sm sm:text-base font-bold text-slate-800 mb-4 flex items-center">
         <span className="mr-2">📊</span>
         {title}
         {infoText && (
@@ -700,10 +700,10 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
 
   return (
     // Main layout is fully responsive: single column on mobile, 2/3 + 1/3 split on desktop
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 font-sans">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 font-sans">
 
       {/* Summary Header */}
-      <div className="md:col-span-3 mb-8">
+      <div className="md:col-span-3 mb-6">
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 sm:p-8 text-white shadow-lg relative">
           <div className="absolute top-4 right-4 flex space-x-2">
             <button
@@ -734,23 +734,23 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
               </svg>
             </button>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4">Portfolio Analytics Dashboard</h2>
+          <h2 className="text-lg sm:text-xl font-bold mb-4">Portfolio Analytics Dashboard</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <p className="text-blue-100 text-sm">Total Portfolio Value</p>
-              <p className="text-2xl font-bold">{formatCurrency(currentValue)}</p>
+              <p className="text-blue-100 text-xs">Total Portfolio Value</p>
+              <p className="text-lg font-bold">{formatCurrency(currentValue)}</p>
             </div>
             <div>
-              <p className="text-blue-100 text-sm">Total P/L</p>
-              <p className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+              <p className="text-blue-100 text-xs">Total P/L</p>
+              <p className={`text-lg font-bold ${totalProfit >= 0 ? 'text-green-300' : 'text-red-300'}`}>
                 {formatCurrency(totalProfit)} ({formatPercentage(profitPercentage)})
               </p>
             </div>
             {topCompany && (
               <div>
-                <p className="text-blue-100 text-sm">Top Performer</p>
-                <p className="text-xl font-bold">{topCompany.ticker}</p>
-                <p className="text-sm text-blue-100">
+                <p className="text-blue-100 text-xs">Top Performer</p>
+                <p className="text-base font-bold">{topCompany.ticker}</p>
+                <p className="text-xs text-blue-100">
                   {formatCurrency(companyFilter === 'Overall' ? topCompany.overallTotalProfit : topCompany.currentProfit)} profit
                 </p>
               </div>
@@ -760,7 +760,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
       </div>
 
       {/* Left Column (Charts - takes up full width on mobile) */}
-      <div className="md:col-span-2 space-y-4 sm:space-y-6">
+      <div className="md:col-span-2 space-y-2 sm:space-y-4">
 
         {/* Stat Cards Section - 2 columns on mobile, 4 columns on medium and larger screens for better spacing */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
@@ -799,12 +799,12 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         </div>
 
         {/* Time Range Selector */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">Time Range</label>
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-slate-700 mb-2">Time Range</label>
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+            className="w-full sm:w-auto px-3 py-1 text-xs border border-slate-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
           >
             <option value="30d">Last 30 Days</option>
             <option value="3m">Last 3 Months</option>
@@ -834,11 +834,11 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         />
 
         {/* Company Filter Selector */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
             <button
               onClick={() => setCompanyFilter('Overall')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                 companyFilter === 'Overall'
                   ? 'bg-white text-green-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-800'
@@ -848,7 +848,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
             </button>
             <button
               onClick={() => setCompanyFilter('Current Investment')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                 companyFilter === 'Current Investment'
                   ? 'bg-white text-green-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-800'
@@ -903,11 +903,11 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         />
 
         {/* Sector Filter Selector */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
             <button
               onClick={() => setSectorFilter('Overall')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                 sectorFilter === 'Overall'
                   ? 'bg-white text-blue-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-800'
@@ -917,7 +917,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
             </button>
             <button
               onClick={() => setSectorFilter('Current Investment')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                 sectorFilter === 'Current Investment'
                   ? 'bg-white text-blue-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-800'
@@ -972,11 +972,11 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         />
 
         {/* Asset Type Filter Selector */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
             <button
               onClick={() => setAssetTypeFilter('Overall')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                 assetTypeFilter === 'Overall'
                   ? 'bg-white text-purple-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-800'
@@ -986,7 +986,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
             </button>
             <button
               onClick={() => setAssetTypeFilter('Current Investment')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                 assetTypeFilter === 'Current Investment'
                   ? 'bg-white text-purple-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-800'
@@ -1042,11 +1042,11 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
         />
 
         {/* Broker Filter Selector */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
             <button
               onClick={() => setBrokerFilter('Overall')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                 brokerFilter === 'Overall'
                   ? 'bg-white text-indigo-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-800'
@@ -1056,7 +1056,7 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
             </button>
             <button
               onClick={() => setBrokerFilter('Current Investment')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                 brokerFilter === 'Current Investment'
                   ? 'bg-white text-indigo-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-800'
@@ -1113,12 +1113,12 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
       </div>
 
       {/* Right Column (Side Panel - stacks below charts on mobile) */}
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-2 sm:space-y-4">
         
         {/* Quick Stats Card */}
-        <div className="bg-white border border-slate-100 rounded-xl p-4 sm:p-6 shadow-lg">
-          <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-4">Quick Stats 📊</h3>
-          <ul className="text-sm sm:text-base text-slate-700 space-y-2">
+        <div className="bg-white border border-slate-100 rounded-xl p-2 sm:p-3 shadow-lg">
+          <h3 className="text-xs sm:text-sm font-semibold text-slate-700 mb-4">Quick Stats 📊</h3>
+          <ul className="text-xs text-slate-700 space-y-2">
             <li>
               Total transactions: <strong>{transactions.length}</strong>
             </li>
