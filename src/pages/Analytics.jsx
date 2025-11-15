@@ -411,7 +411,7 @@ function StatCard({ label, value, positive = true }) {
       {/* Font size is slightly larger on desktop for prominence */}
       <div
         className={`text-lg sm:text-xl font-bold mt-1 ${
-          label.includes('Profit / Loss') ? valueColor : 'text-slate-900'
+          label.includes('P/L') ? valueColor : 'text-slate-900'
         }`}
       >
         {value}
@@ -634,8 +634,8 @@ function AnalyticsPanel({ analytics, transactions, tickerPrices, portfolioData, 
       {/* Left Column (Charts - takes up full width on mobile) */}
       <div className="md:col-span-2 space-y-4 sm:space-y-6">
         
-        {/* Stat Cards Section - 2 columns on mobile, 7 columns on desktop/tablet */}
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-4 sm:gap-6">
+        {/* Stat Cards Section - 2 columns on mobile, 4 columns on medium and larger screens for better spacing */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           <StatCard
             label="Total Investment"
             value={formatCurrency(totalInvestment)}
