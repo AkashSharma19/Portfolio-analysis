@@ -8,6 +8,7 @@ export default function App() {
   const [tickers, setTickers] = useState([]);
   const [portfolioData, setPortfolioData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const tickerPrices = useMemo(() => {
     const map = {};
@@ -100,6 +101,19 @@ export default function App() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const fetchTransactions = async () => {
     try {
       const res = await fetch("https://script.google.com/macros/s/AKfycbytNIkwskGlr-Uf6Ug9kmKoLSUvhfVXOF6-qIig9NPAnpfMk_tAn8K-8jcnk_Bvu3s/exec?action=get", { cache: 'no-cache' });
@@ -154,7 +168,7 @@ export default function App() {
             <TabButton active={tab === "analytics"} onClick={() => setTab("analytics")}>Analytics</TabButton>
             <TabButton active={tab === "transactions"} onClick={() => setTab("transactions")}>Transactions</TabButton>
             <div className="ml-auto flex items-center gap-2">
-              {/* Refresh not needed for local storage */}
+              <ConnectivityIndicator isOnline={isOnline} />
             </div>
           </div>
 
@@ -182,6 +196,25 @@ function TabButton({ children, active, onClick }) {
     >
       {children}
     </button>
+  );
+}
+
+function ConnectivityIndicator({ isOnline }) {
+  return (
+    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+      isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+    }`}>
+      {isOnline ? (
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M17.778 8.222c-4.296-4.296-11.26-4.296-15.556 0A1 1 0 01.808 9.636c5.076 5.076 13.308 5.076 18.384 0a1 1 0 01-1.414-1.414zM14.95 11.05a7 7 0 00-9.9 0 1 1 0 01-1.414-1.414 9 9 0 0112.728 0 1 1 0 01-1.414 1.414zM12.12 13.879a3 3 0 00-4.242 0 1 1 0 01-1.415-1.415 5 5 0 017.072 0 1 1 0 01-1.415 1.415zM10 16a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3c-2.25 0-4.33.855-6.032 2.293L3.707 2.293zm1.988 4.011A7.009 7.009 0 0110 5c2.717 0 5.187 1.544 6.542 4H16a1 1 0 100 2h3a1 1 0 001-1c0-3.74-2.553-7-6.542-8.978L8.695 6.304zM10 15a1 1 0 100-2 1 1 0 000 2zm-3-3a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+        </svg>
+      )}
+      <span>{isOnline ? 'Online' : 'Offline'}</span>
+    </div>
   );
 }
 
